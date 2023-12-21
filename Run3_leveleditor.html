@@ -1,0 +1,598 @@
+<html> <title>Oreoid's Run 3 Level Renderer</title>
+<link href='https://fonts.googleapis.com/css?family=Comfortaa' rel='stylesheet'> 
+<link href='https://fonts.googleapis.com/css?family=Permanent+Marker' rel='stylesheet'>
+<link href='https://fonts.googleapis.com/css?family=IBM+Plex+Mono' rel='stylesheet'>
+<body>
+<div id="textinputcontainer"><div><label for="leveldata" id="leveldatalabel">Level data:</label></div><div><input type="text" id="leveldataTextInput" placeholder="layout-tunnelA,B|terrain-pos-1"/></div><div><button id="loaderButton" onclick="parseleveldata();">Load</button></div></div>
+<div id="LevelLoadingSpaceOuter"><table id="LevelLoadingSpaceInner1"></table><table id="LevelLoadingSpaceInner2" style="opacity: 0.5;"></table></div>
+</body><script type="text/javascript">
+var LevelMapStorer1 = document.querySelector('#LevelLoadingSpaceInner1');
+var LevelMapStorer2 = document.querySelector('#LevelLoadingSpaceInner2');
+var ThingArray = [];
+var LayoutArray = [];
+var Dimensions = 0;
+var Sides = 0;
+var ZLengthMax = 0;
+var TerrainArray = [];
+var PosData = '';
+var LayoutID = 0;
+var GlobalTileWidth = 75;
+var ColorArray = [];
+var LevelData = '';
+var PosCells = [];
+var GridSize = 1;
+function parseleveldata(){
+	ClearToRebuild();
+    LevelData = document.getElementById('leveldataTextInput').value;
+    ThingArray = LevelData.split('|');
+    for (let step = 1; step <= ThingArray.length; step++){
+        if(/layout[0-9]*\x2Dtunnel/g.test(`${ThingArray[step - 1]}`)){
+            LayoutArray.push(`${ThingArray[step - 1]}`);
+            LayoutArray.push(true);
+            console.log("found Tunnel layout at slot " + (step - 1) + ": " + `${ThingArray[step - 1]}`);
+        }
+    }
+    if (LayoutArray.length < 1){ // means it's not a mf level
+        alert("Use some level data this time. >:(");
+    } 
+    else {
+        var DimensionsArray = /layout\x2Dtunnel([0-9]+)\x2C([0-9]+)$/g.exec(`${LayoutArray[0]}`);
+        Dimensions = Number(`${DimensionsArray[1]}`) * Number(`${DimensionsArray[2]}`);
+		Sides = Number(`${DimensionsArray[2]}`);
+        var SpawnList = [];
+        for (let step2 = 1; step2 <= Dimensions; step2++){
+            SpawnList.push('0');
+        }
+        var EndSpawnList = [];
+        for (let step2 = 1; step2 <= Dimensions; step2++){
+            EndSpawnList.push('0');
+        }
+        for (let step1 = 1; step1 <= ThingArray.length; step1++){
+            if (/^color[0-9]*\x2D0x[0-9A-Fa-f]{6}$/g.test(`${ThingArray[step1 - 1]}`)){
+                console.log("found color data at slot " + (step1 - 1) + ": " + `${ThingArray[step1 - 1]}`);
+                var ColorArrayTemp = /color([0-9]*)\x2D0x([0-9A-Fa-f]{6})/g.exec(`${ThingArray[step1 - 1]}`);
+                if (`${ColorArrayTemp[1]}` == ""){
+                    ColorArrayTemp.splice(1, 1, 0);
+                }
+                if (ColorArray.length < `${ColorArrayTemp[1]}`){
+                    ColorArray.length = `${ColorArrayTemp[1]}`;
+                }
+                ColorArray.splice(`${ColorArrayTemp[1]}`, 1, `${ColorArrayTemp[2]}`);
+            }
+        }
+        for (let step1 = 1; step1 <= ThingArray.length; step1++){
+            if (/^tileWidth\x2D[0-9]{1,}$/g.test(`${ThingArray[step1 - 1]}`)){
+                var TileWidthArrayTemp = /^tileWidth\x2D([0-9]{1,})$/g.exec(`${ThingArray[step1 - 1]}`);
+                GlobalTileWidth = `${TileWidthArrayTemp[1]}`;
+            }
+        }
+        for (let step1 = 1; step1 <= ThingArray.length; step1++){ // handle spawn- before everything else as if it were terrain- data, some but not all endSpawn stuff here too
+            if (/^spawn\x2D[0-9]+$/g.test(`${ThingArray[step1 - 1]}`)){
+                var SpawnTemp = /^spawn\x2D([0-9]+)$/g.exec(`${ThingArray[step1 - 1]}`);
+                SpawnList.splice(`${SpawnTemp[1]}`,1,1);
+            }
+            else if (/^endSpawn\x2D[0-9]+$/g.test(`${ThingArray[step1 - 1]}`)){
+                var EndSpawnTemp = /^endSpawn\x2D([0-9]+)$/g.exec(`${ThingArray[step1 - 1]}`);
+                EndSpawnList.splice(`${EndSpawnTemp[1]}`,1,1);
+            }
+        }
+        var SpawnBin = '';
+        for (let step1 = 1; step1 <= Dimensions; step1++){
+            SpawnBin = SpawnBin + `${SpawnList[step1 - 1]}`;
+        }
+        var EndSpawnBin = '';
+        for (let step1 = 1; step1 <= Dimensions; step1++){
+            EndSpawnBin = EndSpawnBin + `${EndSpawnList[step1 - 1]}`;
+        }
+		console.log(EndSpawnBin);
+        var DimensionBuffer = '';
+        for (let step1 = 1; step1 <= Dimensions; step1++){
+            DimensionBuffer = DimensionBuffer + '0';
+        }
+        if (SpawnBin != DimensionBuffer){
+            if (/^([01]+1)0+$/g.test(SpawnBin)){
+                SpawnTemp = /^([01]+1)0+$/g.exec(SpawnBin);
+                SpawnBin = `${SpawnTemp[1]}`;
+            } // removed trailing 0s
+            TerrainArray.push('spawn', 'FFFFFF', SpawnBin);
+        }
+        for (let step1 = 1; step1 <= ThingArray.length; step1++){
+            let currentThing = `${ThingArray[step1 - 1]}`;
+            if (/^terrain\x2D/g.test(currentThing)){
+                console.log("found terrain data at slot " + (step1 - 1) + ": " + currentThing);
+                let TileType = '';
+                switch (true){
+                    case /\x7Ecrumbling\b/g.test(currentThing): {
+                        TileType = 'crumbling';
+                        break;
+                    }
+                    case /\x7Eice\b/g.test(currentThing): {
+                        TileType = 'ice';
+                        break;
+                    }
+                    case /\x7Eramp\b/g.test(currentThing): {
+                        TileType = 'iceRamp';
+                        break;
+                    }
+                    case /\x7EsteepRamp\b/g.test(currentThing): {
+                        TileType = 'steepRamp';
+                        break;
+                    }
+                    case /\x7Eglow\b/g.test(currentThing): {
+                        TileType = 'glow';
+                        break;
+                    }
+                    case /\x7Efast\b/g.test(currentThing): {
+                        TileType = 'fast';
+                        break;
+                    }
+                    case /\x7Eslow\b/g.test(currentThing): {
+                        TileType = 'slow';
+                        break;
+                    }
+                    case /\x7Eleft\b/g.test(currentThing): {
+                        TileType = 'left';
+                        break;
+                    }
+                    case /\x7Eright\b/g.test(currentThing): {
+                        TileType = 'right';
+                        break;
+                    }
+                    case /\x7Ebounce\b/g.test(currentThing):
+                    case /\x7Ebouncy\b/g.test(currentThing): {
+                        TileType = 'bouncy';
+                        break;
+                    }
+                    case /\x7Ebattery\b/g.test(currentThing): {
+                        TileType = 'battery';
+                        break;
+                    }
+                    case /\x7Emovable\b/g.test(currentThing): {
+                        TileType = 'movable';
+                        break;
+                    }
+                    case /\x7Ewarning\b/g.test(currentThing):
+                    case /\x7Etexture\x2DWarningStripes\b/g.test(currentThing): {
+                        TileType = 'warning';
+                        break;
+                    }
+                    case /\x7Ebox\b/g.test(currentThing):{
+                        TileType = 'box';
+                        break;
+                    }
+                    case /\x7ErotatedZBox\b/g.test(currentThing):{
+                        TileType = 'rotatedZBox';
+                        break;
+                    }
+                    case /\x7EmovableBox\b/g.test(currentThing):{
+                        TileType = 'movableBox';
+                        break;
+                    }
+                    case /\x7EopenBox\b/g.test(currentThing):{
+                        TileType = 'openBox';
+                        break;
+                    }
+                    case /\x7Eruined\b/g.test(currentThing):{
+                        TileType = 'ruined';
+                        break;
+                    }
+                    case /\x7Ebridge\b/g.test(currentThing):{
+                        TileType = 'bridge';
+                        break;
+                    }
+                    case /\x7Einverse\b/g.test(currentThing):{
+                        TileType = 'inverse';
+                        break;
+                    }
+                    case /\x7Enonrotating\b/g.test(currentThing):{
+                        TileType = 'nonrotating';
+                        break;
+                    }
+                    case /\x7Esticky\b/g.test(currentThing):{
+                        TileType = 'sticky';
+                        break;
+                    }
+                    default:{
+                        TileType = 'normal';
+                    }
+                }
+                TerrainArray.push(TileType);
+                if (/\x7E*color\x2D/g.test(currentThing)){
+                    var ColorIDArrayTemp = /\x7E*color\x2D([0-9]{1,})/g.exec(currentThing);
+                    var ColorID = parseInt(`${ColorArrayTemp[1]}`);
+                }
+                else {
+                    var ColorID = 0;
+                }
+                if (`${ColorArray[ColorID]}` == 'undefined'){
+                    var ColorCode = 'FFFFFF';
+                }
+                else {
+                    var ColorCode = `${ColorArray[ColorID]}`;
+                }
+                TerrainArray.push(ColorCode); // now you have the color to render this with
+                if (/\x7E*pos\x2D[\x2A0-o]{1,}/g.test(currentThing)){ // thing that parses terrain data begins here
+                    var PosArrayTemp = /\x7E*pos\x2D([\x2A0-o]{1,})/g.exec(currentThing);
+                    PosData = "p" + `${PosArrayTemp[1]}` + "p";
+                    while (!/p[0-o]{1,}p/g.test(PosData)){ // start by replacing asterisks
+                        var AsterArrayTemp = /[0-o]([\x2A]{1,})[0-o]/g.exec(PosData);
+                        var TotalAster = `${AsterArrayTemp[1]}`;
+                        var AsterRegex = new RegExp("([0-o]{" + TotalAster.length + "})[\x2A]{" + TotalAster.length + "}([0-o]{1})");
+                        var AsterExtractTemp = AsterRegex.exec(PosData);
+                        var ToBeReplacedAster = `${AsterExtractTemp[1]}` + TotalAster + `${AsterExtractTemp[2]}`;
+                        var ReplaceAster = `${AsterExtractTemp[1]}`;
+                        for (let step2 = 2; step2 <= `${AsterExtractTemp[2].charCodeAt(0)}` - 48; step2++){
+                            ReplaceAster += `${AsterExtractTemp[1]}`;
+                        }
+                        PosArrayTemp = PosData.split(ToBeReplacedAster);
+                        PosData = `${PosArrayTemp[0]}`;
+                        for (let step2 = 2; step2 <= PosArrayTemp.length; step2++){
+                            PosData += ReplaceAster + `${PosArrayTemp[step2 - 1]}`;
+                        }
+                    }
+					PosArrayTemp = /p([0-o]{1,})p/g.exec(PosData);
+					PosData = `${PosArrayTemp[1]}`;
+                    PosArrayTemp = PosData.split(''); // now convert to binary string
+                    PosData = '';
+                    for (let step2 = 0; step2 < PosArrayTemp.length; step2++){
+                        var CurrentPosDec = `${PosArrayTemp[step2]}`;
+						var CurrentPosBin = (CurrentPosDec.charCodeAt(0) - 48).toString(2);
+						while(CurrentPosBin.length < 6){
+							CurrentPosBin = '0' + CurrentPosBin;
+						}
+						PosData += CurrentPosBin;
+                    } // converted to binary string
+                    if (/^([01]+1)0+$/g.test(PosData)){
+                        PosArrayTemp = /^([01]+1)0+$/g.exec(PosData);
+                        PosData = `${PosArrayTemp[1]}`;
+                    } // remove any trailing 0s
+                    if (SpawnBin != DimensionBuffer){
+                        PosData = DimensionBuffer + PosData;
+                    }
+                }
+                else {
+                    PosData = '0';
+                }
+                TerrainArray.push(PosData); // now you have almost all the level data as a binary string
+            }
+        }
+        for (let step1 = 0; step1 < TerrainArray.length; step1++){
+            if ((step1 % 3) == (2 % 3)){
+            CurrentPosBin = `${TerrainArray[step1]}`;
+                var CurrentPosLength = CurrentPosBin.length;
+                var ZLengthCurrent = Math.ceil(CurrentPosLength / Dimensions);
+                if (ZLengthCurrent > ZLengthMax){
+                    ZLengthMax = ZLengthCurrent;
+                }
+            }
+        }
+        if (EndSpawnBin != DimensionBuffer){ // time for endSpawn bullshit
+			console.log(EndSpawnBin);
+            var EndSpawnZeroTrail = '';
+            for (let step1 = 1; step1 <= ZLengthMax; step1++){
+                EndSpawnZeroTrail += DimensionBuffer;
+            }
+            ZLengthMax = ZLengthMax + 1;
+            TerrainArray.push('endSpawn', 'FFFFFF', EndSpawnZeroTrail + EndSpawnBin);
+        } // endspawns detected
+		console.log(TerrainArray);
+		GridSize = ZLengthMax * Dimensions; // time to (not) transpose all of the data
+    console.log(LayoutArray);
+    console.log(TerrainArray);
+	console.log('Dimensions: ' + Dimensions);
+	console.log('ZLengthMax: ' + ZLengthMax);
+	updateLevel();
+    }
+}
+function updateLevel(){
+    for (let i = 0; i < GridSize; i++){
+        PosCells.push('<td class="nothing" style="background-color: #0000;"></td>');
+    }
+	let TileDeterminer = [];
+	for (let i = 0; i < TerrainArray.length; i++){
+		if ((i % 3) == (2 % 3)){
+			let GivenTileType = `${TerrainArray[i - 2]}`;
+			let GivenTileColor = `${TerrainArray[i - 1]}`;
+			let ThisTile = [];
+			switch (true) {
+				default :{
+					ThisTile.push('<td class="normal" style="background-color: #' + GivenTileColor + ';"></td>');
+					break;
+				}
+				case GivenTileType == 'crumbling' :{
+					for (let j = 1; j <= 8; j++){
+						ThisTile.push('<td class="crumbling" style="background: no-repeat url(./images/CrumblingTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					}
+					break;
+				}
+				case GivenTileType == 'ice' :{
+					for (let j = 1; j <= 4; j++){
+						ThisTile.push('<td class="ice" style="background: no-repeat url(./images/IceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					}
+					break;
+				}
+				case GivenTileType == 'iceRamp' :{
+					for (let j = 1; j <= 4; j++){
+						ThisTile.push('<td class="iceRamp" style="background: no-repeat url(./images/RampOverlay.png), no-repeat url(./images/IceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					}
+					break;
+				}
+				case GivenTileType == 'steepRamp' :{
+					ThisTile.push('<td class="steepRamp" style="background: no-repeat url(./images/RampOverlay.png); background-size: contain; background-color:#' + GivenTileColor + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					break;
+				}
+				case GivenTileType == 'glow' :{
+					let InterpolateColor = ColorMathInterpolate(GivenTileColor,'dddddd',0.2);
+					ThisTile.push('<td class="glow" style="background-color: #' + InterpolateColor + ';"></td>');
+					break;
+				}
+				case GivenTileType == 'fast' :{
+					ThisTile.push('<td class="fast" style="background: no-repeat url(./images/Acceleration-180.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+					break;
+				}
+				case GivenTileType == 'slow' :{
+					ThisTile.push('<td class="slow" style="background: no-repeat url(./images/Acceleration.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+					break;
+				}
+				case GivenTileType == 'left' :{
+					ThisTile.push('<td class="left" style="background: no-repeat url(./images/Acceleration-90L.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+					break;
+				}
+				case GivenTileType == 'right' :{
+					ThisTile.push('<td class="right" style="background: no-repeat url(./images/Acceleration-90R.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+					break;
+				}
+				case GivenTileType == 'bouncy' :{
+					ThisTile.push('<td class="bouncy" style="background: no-repeat url(./images/bounce.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+					break;
+				}
+				case GivenTileType == 'battery' :{
+					ThisTile.push('<td class="battery" style="background-color: #0000;"><img src="./images/Battery.png" style="rotate: 0deg; width: 100%; height: 100%;"></td>');
+					break;
+				}
+				case GivenTileType == 'movable' :{
+					ThisTile.push('<td class="movable" style="background: no-repeat url(./images/Ring.png); background-size: contain; background-color:#' + GivenTileColor + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					break;
+				}
+				case GivenTileType == 'warning' :{
+					ThisTile.push('<td class="warning" style="background: no-repeat url(./images/WarningStripes.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					break;
+				}
+				case GivenTileType == 'box' :{
+					let InterpolateColor = ColorMathInterpolate(GivenTileColor,'dddddd',0.85);
+					let GivenBoxBorderWidth = Math.ceil(GlobalTileWidth * (2 / 75));
+					ThisTile.push('<td class="box" style="background-color: #' + InterpolateColor + '; box-shadow: inset 0em 0em 0em ' + GivenBoxBorderWidth + 'px #' + GivenTileColor + ';"></td>');
+					break;
+				}
+				case GivenTileType == 'rotatedZBox' :{
+					let InterpolateColor = ColorMathInterpolate(GivenTileColor,'eeeeee',0.85);
+					let SecondInterpolateColor = ColorMathInterpolate(GivenTileColor,'cccccc',0.85);
+					let ThirdInterpolateColor = ColorMathInterpolate(GivenTileColor,'aaaaaa',0.85);
+					let GivenBoxBorderWidth = Math.ceil(GlobalTileWidth * (2 / 75));
+					ThisTile.push('<td class="rotatedZBox" style="background-color: #0000;"><div style="background-color: #' + SecondInterpolateColor + '; box-shadow: inset 0em 0em 0em ' + (2 * GivenBoxBorderWidth) + 'px #' + GivenTileColor + '; width: 100%; height: 100%; transform: matrix(0.5, 0.2, 0, 0.6, ' + (0.125 * GlobalTileWidth) + ', -' + (0.0625 * GlobalTileWidth) + ');"></div><div style="background-color: #' + InterpolateColor + '; box-shadow: inset 0em 0em 0em ' +(2 * GivenBoxBorderWidth) + 'px #' + GivenTileColor + '; width: 100%; height: 100%; transform: matrix(-0.5, 0.2, 0, 0.6, -' + (0.125 * GlobalTileWidth) + ', -' + (0.5625 * GlobalTileWidth) + ');"></div><div style="background-color: #' + ThirdInterpolateColor + '; box-shadow: inset 0em 0em 0em ' + (2 * GivenBoxBorderWidth) + 'px #' + GivenTileColor + '; width: 100%; height: 100%; transform: matrix(0.5, -0.2, 0.5, 0.2, 0, -' + (0.8625 * GlobalTileWidth) +');"></div></td>');
+					break;
+				}
+				case GivenTileType == 'movableBox' :{
+					let InterpolateColor = ColorMathInterpolate(GivenTileColor,'dddddd',0.85);
+					let GivenBoxBorderWidth = Math.ceil(GlobalTileWidth * (2 / 75));
+					ThisTile.push('<td class="box" style="background-color: #' + InterpolateColor + '; box-shadow: inset 0em 0em 0em ' + GivenBoxBorderWidth + 'px #' + GivenTileColor + ';"><img src="./images/Ring.png" style="width: 100%; height: 100%;"></td>');
+					break;
+				}
+				case GivenTileType == 'openBox' :{
+					let InterpolateColor = ColorMathInterpolate(GivenTileColor,'999999',0.85);
+					let SecondInterpolateColor = ColorMathInterpolate(GivenTileColor,'dddddd',0.85);
+					let GivenBoxBorderWidth = Math.ceil(GlobalTileWidth * (2 / 75));
+					let GivenBoxGlowWidth = Math.ceil(GlobalTileWidth * (10 / 75));
+					ThisTile.push('<td class="openBox" style="background-color: #' + InterpolateColor + '; box-shadow: inset 0em 0em 0em ' + GivenBoxBorderWidth + 'px #' + GivenTileColor + ', inset 0em 0em ' + GivenBoxGlowWidth + 'px ' + (GivenBoxBorderWidth * 2) + 'px #' + SecondInterpolateColor + ';"><div style="background-color: #' + SecondInterpolateColor + '; box-shadow: inset 0em 0em 0em ' + (1.6 * GivenBoxBorderWidth) + 'px #' + GivenTileColor + '; width: 100%; height: 100%; transform: matrix(' + (Math.cos(2 * Math.PI / 3)) + ', ' + (-1 * Math.sin(2 * Math.PI / 3)) + ', ' + (Math.sin(2 * Math.PI / 3)) + ', ' + (Math.cos(2 * Math.PI / 3)) + ', ' + GivenBoxGlowWidth + ', ' + (-1 * GivenBoxGlowWidth) + ');"></div></td>');
+					break;
+				}
+				case GivenTileType == 'ruined' :{
+					let InterpolateColor = ColorMathInterpolate(GivenTileColor,'b0b0b0',0.1);
+					for (j = 1; j <= 8; j++){
+						ThisTile.push('<td class="ruined" style="background: #' + InterpolateColor + ' no-repeat url(./images/RuinedTile' + j + '.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					}
+					break;
+				}
+				case GivenTileType == 'bridge' :{
+					ThisTile.push('<td class="bridge" style="background: no-repeat url(./images/bridge.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					break;
+				}
+				case GivenTileType == 'inverse' :{
+					let InterpolateColor = ColorMathInterpolate(GivenTileColor,'550055',0.8);
+					ThisTile.push('<td class="inverse" style="background-color: #' + InterpolateColor + ';"></td>');
+					break;
+				}
+				case GivenTileType == 'nonrotating' :{
+					let InterpolateColor = ColorMathInterpolate(GivenTileColor,'000000',0.3);
+					ThisTile.push('<td class="nonrotating" style="background-color: #' + InterpolateColor + ';"></td>');
+					break;
+				}
+				case GivenTileType == 'sticky' :{
+					let InterpolateColor = ColorMathInterpolate(GivenTileColor,'88990c',0.9);
+					ThisTile.push('<td class="sticky" style="background-color: #' + InterpolateColor + ';"></td>');
+					break;
+				}
+				case GivenTileType == 'spawn' :{
+					ThisTile.push('<td class="spawn" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%; rotate: 180deg;"></td>');
+					break;
+				}
+				case GivenTileType == 'endSpawn' :{
+					ThisTile.push('<td class="endSpawn" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%;"></td>');
+					break;
+				}
+			}
+			let tempval1 = `${TerrainArray[i]}`;
+			TileDeterminer = tempval1.split('');
+			for (let j = 0; j < GridSize; j++){
+				if (TileDeterminer[j] == '1'){
+					let TileRandomizer = Math.floor(Math.random() * ThisTile.length);
+					PosCells.splice(j, 1, `${ThisTile[TileRandomizer]}`);
+				}
+			}
+		}
+	}
+	console.log(PosCells);
+	let HTMLArray = ['<style>td{width: ' + (0.5 * GlobalTileWidth) + 'px; height: ' + (0.5 * GlobalTileWidth) + 'px;}</style><tbody>'];
+	for (let i = 0; i < GridSize; i++){
+		if ((i % Dimensions) == (Dimensions % Dimensions)){
+			HTMLArray.push('<tr>');
+		}
+		if ((i % Sides) == (Sides % Sides)){
+			HTMLArray.push('<td class="corner" style="background-color: #FFF3; width: 0px; height: ' + (0.5 * GlobalTileWidth) + 'px;"></td>');
+		}
+		HTMLArray.push(`${PosCells[i]}`);
+		if (((i + 1) % Dimensions) == (Dimensions % Dimensions)){
+			HTMLArray.push('<td class="corner" style="background-color: #FFF3; width: 0px; height: ' + (0.5 * GlobalTileWidth) + 'px;"></td>');
+			HTMLArray.push('</tr>');
+		}
+	}
+	HTMLArray.push('</tbody>');
+	console.log(HTMLArray);
+	LevelMapStorer1.innerHTML = HTMLArray.join('');
+	LevelMapStorer2.innerHTML = HTMLArray.join('');
+}
+	/*
+    for (let i = 0; i < TerrainArray.length; i++){
+        if ((i % 3) == (2 % 3)){
+            let PosVal = `${TerrainArray[i]}`;
+            let GridArray = PosVal.split('');
+            let CurrentTileType = `${TerrainArray[i - 2]}`;
+            let GivenTileColor = `${TerrainArray[i - 1]}`;
+			let TileSizeHTML = 'width: ' + (0.5 * GlobalTileWidth) + 'px; height:' + (0.5 * GlobalTileWidth) + 'px;';
+			let ThisTile = '';
+            switch (true){
+				default:{
+					ThisTile = '<td class="normal" style="background-color: #' + GivenTileColor + ';"></td>';
+                }
+            }
+			let HTMLString = ['<style>td{' + TileSizeHTML + '} tr{display: flex;} table{background-color: #0000;}</style>', '<tbody>'];
+			HTMLString.length = 2 + Dimensions + GridSize;
+            for (let j = 0; j < Dimensions; j++){
+				console.log('??');
+				HTMLString.push('<tr>');
+				for (let k = 0; k < ZLengthMax; k++){
+					console.log('???')
+					let CellNumber = (Dimensions * j) + k;
+					console.log('CellNumber: ' + CellNumber);
+					let FormulaNumber = `${GridArray[CellNumber]}`;
+					console.log('FormulaNumber: ' + FormulaNumber);
+					if (`${GridArray[FormulaNumber]}` == '1'){
+						HTMLString.push(ThisTile);
+                    }
+					else {
+						HTMLString.push('<td class="nothing" style="background-color: #0000;"></td>');
+					}
+                }
+				HTMLString.push('</tr>');
+            }
+			HTMLString.push('</tbody>');
+			LevelMapStorer.innerHTML = HTMLString.join('');
+			
+        }
+    }*/
+function ColorMathInterpolate(param1,param2,param3){
+	let TempArray = [];
+	if(param3 <= 0){
+       return param1;
+    }
+    if(param3 >= 1){
+        return param2;
+    }
+	param1 = parseInt(param1, 16);
+	param2 = parseInt(param2, 16);
+    var red1 = (((param1 & parseInt('FF0000', 16)) * (1 - param3)) + ((param2 & parseInt('FF0000', 16)) * param3)).toString(16);
+	TempArray = /^([0-9A-Fa-f]{2})/.exec(red1);
+	if(TempArray == null){
+		red1 = '00';
+	}
+	else {
+		red1 = `${TempArray[1]}`;
+	}
+    var green1 = (((param1 & parseInt('00FF00', 16)) * (1 - param3)) + ((param2 & parseInt('00FF00', 16)) * param3)).toString(16);
+	TempArray = /^([0-9A-Fa-f]{2})/.exec(green1);
+	if(TempArray == null){
+		green1 = '00';
+	}
+	else {
+		green1 = `${TempArray[1]}`;
+	}
+    var blue1 = (((param1 & parseInt('0000FF', 16)) * (1 - param3)) + ((param2 & parseInt('0000FF', 16)) * param3)).toString(16);
+	TempArray = /^([0-9A-Fa-f]{2})/.exec(blue1);
+	if(TempArray == null){
+		blue1 = '00';
+	}
+	else {
+		blue1 = `${TempArray[1]}`;
+	}
+	return '' + red1 + green1 + blue1 + '';
+}
+function ClearToRebuild(){
+	LevelMapStorer1.innerHTML = '';
+	LevelMapStorer2.innerHTML = '';
+	ThingArray = [];
+	LayoutArray = [];
+	Dimensions = 0;
+	Sides = 0;
+	ZLengthMax = 0;
+	TerrainArray = [];
+	PosData = '';
+	LayoutID = 0;
+	GlobalTileWidth = 75;
+	ColorArray = [];
+	LevelData = '';
+	PosCells = [];
+	GridSize = 1;
+}
+</script>
+<style type="text/css">
+body {
+    background-image: url("./images/Skybox5.png");
+    background-color: black;
+}
+#leveldatalabel {
+    color: white;
+    font-family: 'Comfortaa';
+    font-size: 18px;
+}
+#loaderButton {
+    background-color: black;
+    color: white;
+    font-family: 'Permanent Marker';
+    font-size: 12px;
+}
+#loaderButton:hover {
+    background-color: #222;
+}
+#leveldataTextInput {
+    font-family: 'IBM Plex Mono';
+    font-size: 12px;
+    background-color: black;
+    color: white;
+    min-width: 100%;
+    max-width: 100%;
+}
+#leveldataTextInput:hover {
+    background-color: #222;
+}
+#textinputcontainer {
+    width: 100%;
+    display: grid;
+    grid-template-areas: "a a a";
+    gap: 5px;
+    grid-auto-columns: max-content auto 50px;
+}
+#LevelLoadingSpaceOuter{
+	display: grid;
+	grid-template-areas: "a a a";
+	gap: 0px;
+	grid-auto-columns: max-content max-content max-content;
+	overflow-x: scroll;
+	overflow-y: clip;
+}
+tr {
+	display: flex;
+}
+td {
+	border: 0px;
+}
+</style></html>
