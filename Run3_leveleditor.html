@@ -301,24 +301,24 @@ function updateLevel(){
 				}
 				case GivenTileType == 'crumbling' :{
 					for (let j = 1; j <= 8; j++){
-						ThisTile.push('<td class="crumbling" style="background: no-repeat url(./images/CrumblingTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+						ThisTile.push('<td class="crumbling" style="background: no-repeat url(./CrumblingTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 					}
 					break;
 				}
 				case GivenTileType == 'ice' :{
 					for (let j = 1; j <= 4; j++){
-						ThisTile.push('<td class="ice" style="background: no-repeat url(./images/IceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+						ThisTile.push('<td class="ice" style="background: no-repeat url(./IceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 					}
 					break;
 				}
 				case GivenTileType == 'iceRamp' :{
 					for (let j = 1; j <= 4; j++){
-						ThisTile.push('<td class="iceRamp" style="background: no-repeat url(./images/RampOverlay.png), no-repeat url(./images/IceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+						ThisTile.push('<td class="iceRamp" style="background: no-repeat url(./RampOverlay.png), no-repeat url(./IceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 					}
 					break;
 				}
 				case GivenTileType == 'steepRamp' :{
-					ThisTile.push('<td class="steepRamp" style="background: no-repeat url(./images/RampOverlay.png); background-size: contain; background-color:#' + GivenTileColor + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="steepRamp" style="background: no-repeat url(./RampOverlay.png); background-size: contain; background-color:#' + GivenTileColor + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 					break;
 				}
 				case GivenTileType == 'glow' :{
@@ -327,35 +327,35 @@ function updateLevel(){
 					break;
 				}
 				case GivenTileType == 'fast' :{
-					ThisTile.push('<td class="fast" style="background: no-repeat url(./images/Acceleration-180.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="fast" style="background: no-repeat url(./Acceleration-180.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
 					break;
 				}
 				case GivenTileType == 'slow' :{
-					ThisTile.push('<td class="slow" style="background: no-repeat url(./images/Acceleration.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="slow" style="background: no-repeat url(./Acceleration.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
 					break;
 				}
 				case GivenTileType == 'left' :{
-					ThisTile.push('<td class="left" style="background: no-repeat url(./images/Acceleration-90L.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="left" style="background: no-repeat url(./Acceleration-90L.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
 					break;
 				}
 				case GivenTileType == 'right' :{
-					ThisTile.push('<td class="right" style="background: no-repeat url(./images/Acceleration-90R.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="right" style="background: no-repeat url(./Acceleration-90R.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
 					break;
 				}
 				case GivenTileType == 'bouncy' :{
-					ThisTile.push('<td class="bouncy" style="background: no-repeat url(./images/bounce.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="bouncy" style="background: no-repeat url(./bounce.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
 					break;
 				}
 				case GivenTileType == 'battery' :{
-					ThisTile.push('<td class="battery" style="background-color: #0000;"><img src="./images/Battery.png" style="rotate: 0deg; width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="battery" style="background-color: #0000;"><img src="./Battery.png" style="rotate: 0deg; width: 100%; height: 100%;"></td>');
 					break;
 				}
 				case GivenTileType == 'movable' :{
-					ThisTile.push('<td class="movable" style="background: no-repeat url(./images/Ring.png); background-size: contain; background-color:#' + GivenTileColor + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="movable" style="background: no-repeat url(./Ring.png); background-size: contain; background-color:#' + GivenTileColor + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 					break;
 				}
 				case GivenTileType == 'warning' :{
-					ThisTile.push('<td class="warning" style="background: no-repeat url(./images/WarningStripes.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="warning" style="background: no-repeat url(./WarningStripes.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 					break;
 				}
 				case GivenTileType == 'box' :{
@@ -375,7 +375,7 @@ function updateLevel(){
 				case GivenTileType == 'movableBox' :{
 					let InterpolateColor = ColorMathInterpolate(GivenTileColor,'dddddd',0.85);
 					let GivenBoxBorderWidth = Math.ceil(GlobalTileWidth * (2 / 75));
-					ThisTile.push('<td class="box" style="background-color: #' + InterpolateColor + '; box-shadow: inset 0em 0em 0em ' + GivenBoxBorderWidth + 'px #' + GivenTileColor + ';"><img src="./images/Ring.png" style="width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="box" style="background-color: #' + InterpolateColor + '; box-shadow: inset 0em 0em 0em ' + GivenBoxBorderWidth + 'px #' + GivenTileColor + ';"><img src="./Ring.png" style="width: 100%; height: 100%;"></td>');
 					break;
 				}
 				case GivenTileType == 'openBox' :{
@@ -389,12 +389,12 @@ function updateLevel(){
 				case GivenTileType == 'ruined' :{
 					let InterpolateColor = ColorMathInterpolate(GivenTileColor,'b0b0b0',0.1);
 					for (j = 1; j <= 8; j++){
-						ThisTile.push('<td class="ruined" style="background: #' + InterpolateColor + ' no-repeat url(./images/RuinedTile' + j + '.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+						ThisTile.push('<td class="ruined" style="background: #' + InterpolateColor + ' no-repeat url(./RuinedTile' + j + '.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 					}
 					break;
 				}
 				case GivenTileType == 'bridge' :{
-					ThisTile.push('<td class="bridge" style="background: no-repeat url(./images/bridge.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="bridge" style="background: no-repeat url(./bridge.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 					break;
 				}
 				case GivenTileType == 'inverse' :{
@@ -413,11 +413,11 @@ function updateLevel(){
 					break;
 				}
 				case GivenTileType == 'spawn' :{
-					ThisTile.push('<td class="spawn" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%; rotate: 180deg;"></td>');
+					ThisTile.push('<td class="spawn" style="background-color: #0000;"><img src="./Arrow.png" style="width: 100%; height: 100%; rotate: 180deg;"></td>');
 					break;
 				}
 				case GivenTileType == 'endSpawn' :{
-					ThisTile.push('<td class="endSpawn" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%;"></td>');
+					ThisTile.push('<td class="endSpawn" style="background-color: #0000;"><img src="./Arrow.png" style="width: 100%; height: 100%;"></td>');
 					break;
 				}
 			}
