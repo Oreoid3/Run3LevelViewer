@@ -78,11 +78,11 @@ function renderLevel(){
 			HTMLArray.push('<tr>');
 		}
 		if ((i % Sides) == 0){
-			HTMLArray.push('<td class="corner" style="background-color: #FFF3; width: 0px; height: ' + (0.5 * GlobalTileWidth) + 'px;"></td>');
+			HTMLArray.push('<td class="corner" style="background-color: #' + cInterpolate(ColorArray[0], 'ffffff', 0.5) + '33; width: 0px; height: ' + (0.5 * GlobalTileWidth) + 'px;"></td>');
 		}
 		HTMLArray.push(local1[i]);
 		if (((i + 1) % Chunk) == 0){
-			HTMLArray.push('<td class="corner" style="background-color: #FFF3; width: 0px; height: ' + (0.5 * GlobalTileWidth) + 'px;"></td>');
+			HTMLArray.push('<td class="corner" style="background-color: #' + cInterpolate(ColorArray[0], 'ffffff', 0.5) + '33; width: 0px; height: ' + (0.5 * GlobalTileWidth) + 'px;"></td>');
 			HTMLArray.push('</tr>');
 		}
 	}
