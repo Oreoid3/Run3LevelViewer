@@ -310,12 +310,12 @@ function parseLevelData(param1){
                         break;
                     }
                     case /\x7Espawn\b/g.test(local1[i]): {
-                        local4 = 'spawn';
+                        local4 = 'fakeSpawn';
                         break;
                     }
                     case /\x7Etexture\x2DArrow\b/g.test(local1[i]):
                     case /\x7EendSpawn\b/g.test(local1[i]): {
-                        local4 = 'endSpawn';
+                        local4 = 'fakeEndSpawn';
                         break;
                     }
                     default: { // except this one, this is slightly important
@@ -432,7 +432,7 @@ function getTileAsHTML(param1){
 			break;
 		}
 		case 'warning' : {
-			local3.push('<td class="warning" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/WarningStripes.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+			tiles.push('<td class="warning" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/WarningStripes.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 			break;
 		}
 		case 'box' : {
@@ -473,12 +473,12 @@ function getTileAsHTML(param1){
 			tiles.push('<td class="sticky" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], '88990c', 0.9), Power) + ';"></td>');
 			break;
 		}
-		case 'spawn' : {
-			tiles.push('<td class="downArrow" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%; rotate: 180deg;"></td>');
+		case 'fakeSpawn' : {
+			tiles.push('<td class="fakeSpawn" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%; rotate: 180deg;"></td>');
 				break;
 		}
-		case 'endSpawn' : {
-			tiles.push('<td class="upArrow" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%;"></td>');
+		case 'fakeEndSpawn' : {
+			tiles.push('<td class="fakeEndSpawn" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%;"></td>');
 			break;
 		}
 		default : {
