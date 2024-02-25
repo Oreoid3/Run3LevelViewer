@@ -1,536 +1,968 @@
 <!DOCTYPE html><html>
-<title>Oreoid's Run 3 Level Renderer</title><body>
-<div id="textinputcontainer">
-	<div><label for="leveldataTextInput" id="leveldatalabel">Level data:</label></div>
-	<div><input type="text" id="leveldataTextInput" placeholder="layout-tunnelA,B|terrain-pos-1"/></div>
-	<div><button id="loaderButton" onclick="renderLevel();">Load</button></div>
-</div>
-<div id="LevelLoadingSpaceOuter">
-	<table id="LevelLoadingSpaceInner1"></table>
-	<table id="LevelLoadingSpaceInner2" style="opacity: 0.5;"></table>
-</div>
+<title>Oreoid's Run 3 Level Renderer</title>
+<body>
+	<div id="selectorBox">
+		<div id="fileSelectorBox">
+			<label for="fileSelector">Where should I pull levels from?</label>
+			<select id="fileSelector">
+				<option value="explore" selected>Explore Mode</option>
+				<option value="infinite">Infinite Mode</option>
+				<option value="custom">Level Data</option>
+			</select>
+		</div>
+		<div id="levelSelectorBox">
+		</div>
+		<div id="buttonBox">
+			<input type="button" id="loaderButton" value="Load"/>
+		</div>
+	</div>
+	<div id="outerLoadingSpace">
+		<table id="loadingSpace1"></table>
+		<table id="loadingSpace2" style="opacity: 0.5;"></table>
+	</div>
 </body><script>
-var ColorArray = ['FFFFFF', 'FFFFFF'];
-var Chunk = 1;
-var Sides = 1;
-var ZLength = 1;
-var Power = 1;
-var GlobalTileWidth = 75;
-var TerrainArray = [];
-var TriggerArray = [];
-var SpawnArray = [];
-var endSpawnArray = [];
-var LevelMapStorer1 = document.querySelector('#LevelLoadingSpaceInner1');
-var LevelMapStorer2 = document.querySelector('#LevelLoadingSpaceInner2');
 
-function renderLevel(){
-	clearRebuild();
-	parseLevelData(document.getElementById('leveldataTextInput').value);
-	let local1 = [];
-	let local3 = [];
-	let local4 = [];
-	for (i = 0; i < Chunk * ZLength; i++){
-		local1.push('<td class="nothing" style="background-color: #0000;"></td>');
-	}
-	let val = 0;
-	while (val < Chunk){
-		if(SpawnArray[val]){
-			local1.splice(val, 1, '<td class="spawn" style="background-color: #' + cInterpolate('000000', ColorArray[0], Power) + ';"><img src="./images/Arrow.png" style="width: 100%; height: 100%; rotate: 180deg;"></td>');
-		}
-		else {
-			local1.splice(val, 1, '<td class="nonSpawn" style="background-color: #' + cInterpolate('000000', ColorArray[0], Power) + ';"></td>');
-		}
-		val++;
-	}
-	val = 0;
-	while (val < TerrainArray.length){
-		console.log('adding terrain in TerrainArray[' + val + ']...')
-		local4 = ((TerrainArray[val])[0]).split('');
-		for (j = 0; j < Chunk * ZLength; j++){
-			if(((j % Chunk) == 0) && (TriggerArray.includes(((j - Chunk) / Chunk) + 6))){
-				if(/power/.test(TriggerArray[TriggerArray.indexOf(((j - Chunk) / Chunk) + 6) + 1])){
-					Power = TriggerArray[TriggerArray.indexOf(((j - Chunk) / Chunk) + 6) + 2];
+	var fileSelector = document.getElementById('fileSelector');
+	var levelSelectorBox = document.getElementById('levelSelectorBox');
+	var mapTable1 = document.getElementById('loadingSpace1');
+	var mapTable2 = document.getElementById('loadingSpace2');
+	var tunnelSelector = null;
+	var exploreSelector = null;
+	var idorqSelector = null;
+	var indexSelector = null;
+	var rawDataSelector = null;
+	var exploreData = [];
+	var infiniteData = [];
+	var firstPass = [true, true];
+	var ColorArray = ['FFFFFF', 'FFFFFF'];
+	var Chunk = 1;
+	var Sides = 1;
+	var ZLength = 1;
+	var Power = 1;
+	var GlobalTileWidth = 75;
+	var TerrainArray = [];
+	var TriggerArray = [];
+	var SpawnArray = [];
+	var endSpawnArray = [];
+	
+	function onChangeFile(){
+		let var1 = [];
+		let var2 = 0;
+		tunnelSelector = null;
+		exploreSelector = null;
+		indexSelector = null;
+		idorqSelector = null;
+		rawDataSelector = null;
+		switch (fileSelector.value) {
+			case 'explore' : {
+				if(firstPass[0]){
+					fetch('https://raw.githubusercontent.com/Oreoid3/Run3LevelViewer/main/ExploreLevels.txt') // fetching the actual file was really awkward, this only works because this particular link allows any website to retrieve and use this file
+						.then((res) => res.text())
+						.then((text) => {
+							parseExploreLevels(text);
+						}
+					);
+					return;
 				}
-				local3 = getTileAsHTML(TerrainArray[val]);
-			}
-			if(local4[j] == '1'){
-				local1.splice(j + Chunk, 1, local3[Math.floor(Math.random() * local3.length)]);
-			}
-		}
-		val++;
-	}
-	val = 0;
-	while (val < Chunk){
-		if(endSpawnArray[val]){
-			local1.splice(val + (Chunk * ZLength) - Chunk, 1, '<td class="endSpawn" style="background-color: #' + cInterpolate('000000', ColorArray[0], Power) + ';"><img src="./images/Arrow.png" style="width: 100%; height: 100%;"></td>');
-		}
-		else {
-			local1.splice(val + (Chunk * ZLength) - Chunk, 1, '<td class="nonSpawn" style="background-color: #' + cInterpolate('000000', ColorArray[0], Power) + ';"></td>');
-		}
-		val++;
-	}
-	let HTMLArray = ['<style>td{width: ' + (0.5 * GlobalTileWidth) + 'px; height: ' + (0.5 * GlobalTileWidth) + 'px;}</style><tbody>'];
-	for (let i = 0; i < Chunk * ZLength; i++){
-		if ((i % Chunk) == 0){
-			if(TriggerArray.includes(((i - Chunk) / Chunk) + 5) && 0 != ((i - Chunk) / Chunk)){
-				HTMLArray.push('<tr><td class="trigger" style="background-color: #FFF7; width: 100%; height: 20px; margin: auto; text-align: center; font-family: \'IBM Plex Mono\';">' + TriggerArray[TriggerArray.indexOf(((i - Chunk) / Chunk) + 5) + 1] + '</td></tr>');
-			}
-			HTMLArray.push('<tr>');
-		}
-		if ((i % Sides) == 0){
-			HTMLArray.push('<td class="corner" style="background-color: #' + cInterpolate(ColorArray[0], 'ffffff', 0.5) + '33; width: 0px; height: ' + (0.5 * GlobalTileWidth) + 'px;"></td>');
-		}
-		HTMLArray.push(local1[i]);
-		if (((i + 1) % Chunk) == 0){
-			HTMLArray.push('<td class="corner" style="background-color: #' + cInterpolate(ColorArray[0], 'ffffff', 0.5) + '33; width: 0px; height: ' + (0.5 * GlobalTileWidth) + 'px;"></td>');
-			HTMLArray.push('</tr>');
-		}
-	}
-	HTMLArray.push('</tbody>');
-	LevelMapStorer1.innerHTML = HTMLArray.join('');
-	LevelMapStorer2.innerHTML = HTMLArray.join('');
-}
-
-function clearRebuild(){
-	ColorArray = ['FFFFFF', 'FFFFFF'];
-	Chunk = 1;
-	Sides = 1;
-	ZLength = 1;
-	Power = 1;
-	GlobalTileWidth = 75;
-	TerrainArray = [];
-	TriggerArray = [];
-	SpawnArray = [];
-	endSpawnArray = [];
-}
-
-function parseLevelData(param1){
-	run1Fix: if(!/layout\x2Dtunnel/g.test(param1)){
-		if(/\b0x[0-9A-Fa-f]+\x7C[\x20-\x7B\x7D\x7E]*\x7C0x[0-9A-Fa-f]{6}\b/.test(param1)){
-			param1 = run1ToRun3(param1);
-			break run1Fix;
-		}
-		alert('Not a Run 3 or Run 1 level.');
-		return null;
-	}
-	let local1 = /\blayout\x2Dtunnel([0-9]+)\x2C([0-9]+)\b/g.exec(param1);
-	Chunk = Number(local1[1]) * Number(local1[2]);
-	Sides = Number(local1[2]);
-	while (SpawnArray.length < Chunk){
-		SpawnArray.push(false);
-		endSpawnArray.push(false);
-	}
-	local1 = param1.split('|');
-	if(local1.every((el) => !/^power\x2D[.0-9]+$/.test(el))){
-		local1.push('power-1'); // bandaid ass fix but idfk what else to do; tiles don't render properly now unless i do this
-	}
-	for (i = 0; i < local1.length; i++){
-		switch(true){
-			case /color[0-9]*\x2D0x[0-9A-Fa-f]{6}/g.test(local1[i]) : { // grab color data
-				let local2 = /color([0-9]*)\x2D0x([0-9A-Fa-f]{6})/g.exec(local1[i]);
-				if(local2[1] == ''){
-					local2.splice(1, 1, 0); // assume color 0 if not specified; i think the game does this?
+				var1.push('<div style="display: grid; grid-template-areas: \'a a\'; gap: 5px; grid-auto-columns: auto auto;">');
+				var1.push('<select id="tunnelInput">');
+				while (var2 != exploreData.length){
+					var1.push('<option value=' + var2 + '>' + (exploreData[var2])[0] + '</option>');
+					var2++;
 				}
-				while(ColorArray.length <= Number(local2[1])){
-					ColorArray.push('FFFFFF'); // assume 6 F (what the game does) if you have no color
-				}
-				ColorArray.splice(Number(local2[1]), 1, local2[2]); // splice the actual retrieved color to the array at the right spot
+				var2 = 1;
+				var1.push('</select>');
+				var1.push('<select id="exploreInput">');
+				var1.push('</select>');
+				var1.push('</div>');
 				break;
 			}
-			case /^power\x2D[\x2D0-9.]+$/.test(local1[i]) :{ // grab power level
-				Power = parseFloat((/^power\x2D([\x2D0-9.]+)$/.exec(local1[i]))[1]);
-				switch (true){
-					case 1 <= Power : {
-						Power = 1;
+			case 'infinite' : {
+				if(firstPass[1]){
+					fetch('https://raw.githubusercontent.com/Oreoid3/Run3LevelViewer/main/InfiniteLevels.txt') // see previous comment about this
+						.then((res) => res.text())
+						.then((text) => {
+							parseInfiniteLevels(text);
+						}
+					);
+					return;
+				}
+				var1.push('<div style="display: grid; grid-template-areas: \'a a a\'; gap: 5px; grid-auto-columns: max-content max-content auto;">');
+				var1.push('<select id="id-or-q">');
+				var1.push('<option value=0 selected>Search by ID</option>');
+				var1.push('<option value=1>Search by queue</option>');
+				var1.push('</select>');
+				var1.push('<label for="indexInput"> Index: </label>');
+				var1.push('<input type="text" id="indexInput"/>');
+				var1.push('</div>');
+				break;
+			}
+			case 'custom' : {
+				var1.push('<div style="display: grid; grid-template-areas: \'a a\'; gap: 5px; grid-auto-columns: max-content auto;">');
+				var1.push('<label for="leveltextinput"> Level data: </label>');
+				var1.push('<input type="text" id="leveltextinput"/>');
+				var1.push('</div>')
+				break;
+			}
+		}
+		levelSelectorBox.innerHTML = var1.join('');
+		switch (fileSelector.value){
+			case 'explore' : {
+				tunnelSelector = document.querySelector('#tunnelInput');
+				exploreSelector = document.querySelector('#exploreInput');
+				tunnelSelector.onchange = onChangeTunnel;
+				onChangeTunnel();
+				break;
+			}
+			case 'infinite' : {
+				indexSelector = document.querySelector('#indexInput');
+				idorqSelector = document.querySelector('#id-or-q');
+				break;
+			}
+			case 'custom' : {
+				rawDataSelector = document.querySelector('#leveltextinput');
+			}
+		}
+	}
+	
+	function onChangeTunnel(){
+		let var3 = [];
+		let var4 = 1;
+		let var5 = '';
+		while (var4 != (exploreData[tunnelSelector.value]).length){
+			if(/id\x2d\x2d*[0-9]+/.exec((exploreData[tunnelSelector.value])[var4])){
+				var5 = ['id-', (/id\x2d(\x2d*[0-9]+)/.exec((exploreData[tunnelSelector.value])[var4]))[1]].join('');
+			} else {
+				var5 = 'No ID';
+			}
+			var3.push('<option value=' + var4 + '>' + (/title\x2d([\x20\x21\x23-\x7b\x7d]+)/.exec((exploreData[tunnelSelector.value])[var4]))[1] + ' (' + var5 + ')</option>');
+			var4++;
+		}
+		exploreSelector.innerHTML = var3.join('');
+	}
+	
+	function parseExploreLevels(param1){
+		let arr1 = param1.split('\r\n');
+		let arr2 = [];
+		let arr3 = [];
+		let str1 = '';
+		let it1 = 0;
+		let it2 = 1;
+		while (it1 != arr1.length){
+			if (/\x5bpath\x3d[0-9A-Za-z]+\x5d/g.test(arr1[it1])){
+				arr2.push(it1, (/\x5bpath\x3d([0-9A-Za-z]+)\x5d/g.exec(arr1[it1]))[1]);
+				if (/\x22continuesFrom\x22\x3a\x22[0-9A-Za-z]+\x22/.test(arr1[it1])){ // grab whether a path continues off another path for later
+					arr2.push((/\x22continuesFrom\x22\x3a\x22([0-9A-Za-z]+)\x22/.exec(arr1[it1]))[1]);
+				} else {
+					arr2.push(null);
+				}
+				arr3.push(arr2); // collect these in array 3
+				arr2 = [];
+			}
+			it1++;
+		}
+		it1 = 1;
+		arr3.push([arr1.length, 'END OF FILE', null]); // only so the below thing will work
+		while (it1 < arr3.length){
+			arr2.push(arr1.slice((arr3[it1 - 1])[0],(arr3[it1])[0])); // splice all individual tunnels into array 2
+			it1++;
+		}
+		arr3.pop(); // we don't need the last thing anymore
+		arr1 = []; // array 1 is now general purpose, as array 2 now holds the levels
+		it1 = 0;
+		while (it1 != arr2.length){ // apply "levelData":"" params and eliminate non-level entries
+			if (/\x22levelData\x22\x3a\x22[\x20-\x21\x23-\x7e]+\x22/.test((arr2[it1])[0])){
+				str1 = ["|", (/\x22levelData\x22\x3a\x22([\x20-\x21\x23-\x7e]+)\x22/.exec((arr2[it1])[0]))[1]].join('');
+			}
+			arr1 = arr2[it1];
+			while (it2 != arr1.length){
+				switch (true) {
+					case (/layout\x2d/g.test(arr1[it2])): { // if it has a level, add the "levelData":"" params
+						arr1.splice(it2, 1, [arr1[it2], str1].join(''));
 						break;
 					}
-					case 0 >= Power : {
-						Power = 0;
+					default : { // if it's not a level, get rid of it
+						arr1.splice(it2, 1);
+						it2--;
 					}
 				}
-				TriggerArray.push(5,'power',Power);
-				break;
+				it2++;
 			}
-			case /\btileWidth\x2D[0-9]+\b/.test(local1[i]) :{ // grab tile width
-				GlobalTileWidth = Number((/\btileWidth\x2D([0-9]+)\b/.exec(local1[i]))[1]);
-				break;
-			}
-			case /\bspawn\x2D[0-9]+\b/.test(local1[i]) : { // parse spawns
-				SpawnArray.splice(Number((/\bspawn\x2D([0-9]+)\b/.exec(local1[i]))[1]), 1, true);
-				break;
-			}
-			case /\bendSpawn\x2D[0-9]+\b/.test(local1[i]) : { // parse end spawns
-				endSpawnArray.splice(Number((/\bendSpawn\x2D([0-9]+)\b/.exec(local1[i]))[1]), 1, true);
-				break;
-			}
-			case /\btrigger\x2Dcondition\x2Dz/.test(local1[i]) : { // find trigger conditions
-				let local4 = /\btrigger\x2Dcondition\x2Dz([\x3E\x2C]{1})([0-9]+)/.exec(local1[i]);
-				let local2 = [parseInt(local4[2]) + 6, /\x7Eresult\x2D([0-9A-Za-z]+)/.exec(local1[i])[1]];
-				console.log(local2);
-				if(local2[0] == null){
-					
+			arr2.splice(it1, 1, arr1);
+			it2 = 1;
+			str1 = '';
+			it1++;
+		}
+		it1 = 0;
+		it2 = 0;
+		while (it1 != arr3.length){
+			if ((arr3[it1])[2] != null){
+				str1 = (arr3[it1])[2]; // this path branches from another path we need to fix this
+				while (it2 != arr3.length){
+					if(str1 == (arr3[it2])[1]){ // locate the path it branches from
+						arr2.splice(it2, 1, (arr2[it2]).concat(arr2[it1].slice(1))); // insert the levels from the second half after the first half
+						arr2.splice(it1, 1); // get the second half the fuck outta here
+						arr3.splice(it1, 1);
+						it1--;
+						break; // you don't need to be here anymore
+					}
+					it2++;
 				}
-				if(local2[1] == 'power'){
-					let local3 = parseFloat((/power\x2D([0-9.]+)/.exec(local1[i]))[1]);
+				it2 = 0;
+			}
+			it1++;
+		}
+		it1 = 0;
+		it2 = 1;
+		while (it1 != arr2.length){ // give every level a title (so you can index them)
+			str1 = ['path=', (arr3[it1])[1], ' #'].join(''); // 'path=' fourth
+			switch (true){
+				case (/\x22altPrefix\x22\x3a\x22[\x20\x21\x23-\x7b\x7d]+\x22/.test((arr2[it1])[0])) : { // 'altPrefix' second
+					str1 = (/\x22altPrefix\x22\x3a\x22([\x20\x21\x23-\x7b\x7d]+)\x22/.exec((arr2[it1])[0]))[1];
+					break;
+				}
+				case (/\x22prefix\x22\x3a\x22[\x20\x21\x23-\x7b\x7d]+\x22/.test((arr2[it1])[0])) : { // 'prefix' third
+					str1 = (/\x22prefix\x22\x3a\x22([\x20\x21\x23-\x7b\x7d]+)\x22/.exec((arr2[it1])[0]))[1];
+				}
+			}
+			if (/\\n/.test(str1)){ // remove line breaks
+				str1 = str1.split('\\n').join(' ');
+			}
+			while (it2 != (arr2[it1]).length){
+				if (!/\x7ctitle\x2d/.test((arr2[it1])[it2])){ // actual assigned level titles first
+					(arr2[it1]).splice(it2, 1, [(arr2[it1])[it2], '|title-', str1, it2].join(''));
+				}
+				it2++;
+			}
+			it2 = 1;
+			it1++;
+		} // honestly i should probably develop parsing for the "suffix-" tag at some point, but i don't feel like it right now 
+		it1 = 0;
+		arr1 = [];
+		while (it1 != arr2.length){ 
+			if ((arr2[it1]).length == 2){ // isolate all single level tunnels and place them in one path
+				arr1.push((arr2[it1])[1]); // add the level to an accumulator
+				arr2.splice(it1, 1); // remove its corresponding tunnel
+				arr3.splice(it1, 1);
+				it2 = it1; // using the second iterator to store where to put the singlelevels tunnel
+				it1--;
+			}
+			it1++;
+		}
+		it1 = 0;
+		if (arr1 != []){
+			arr1.splice(0, 0, 'Solo Levels');
+			arr2.splice(it2, 0, arr1);
+			arr3.splice(it2, 0, [-1, 'singletunnels', null]);
+		}
+		while (it1 != arr2.length){
+			switch(true){
+				case ((arr2[it1])[0] == 'Solo Levels') : {
+					str1 = 'Solo Levels';
+					break;
+				}
+				case (/\x5bpath\x3dprimary\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'Main Tunnel';
+					break;
+				}
+				case (/\x5bpath\x3dwinter\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'Winter Games';
+					break;
+				}
+				case (/\x5bpath\x3driver\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'The River (F-Tunnel)';
+					break;
+				}
+				case (/\x5bpath\x3ddark\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'Low-Power Tunnel';
+					break;
+				}
+				case (/\x5bpath\x3dnewlyFormed\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'New Tunnel';
+					break;
+				}
+				case (/\x5bpath\x3dboxes\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'Box Storage Area';
+					break;
+				}
+				case (/\x5bpath\x3dsidePathD\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'The Crystal Gallery (D-Tunnel)';
+					break;
+				}
+				case (/\x5bpath\x3dmemory\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'Memory Evaluation';
+					break;
+				}
+				case (/\x5bpath\x3dcoordination\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'Coordination Challenge';
+					break;
+				}
+				case (/\x5bpath\x3dhome[03]{1}\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'The Way Back';
+					break;
+				}
+				case (/\x5bpath\x3dhome2\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'Not the Way Back';
+					break;
+				}
+				case (/\x5bpath\x3dwormholeSpace\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'Space';
+					break;
+				}
+				case (/\x5bpath\x3drunway[01]{1}\x5d/.test((arr2[it1])[0])) : {
+					str1 = 'The Runway';
+					break;
+				}
+				case (/\x5bpath\x3dsidePath[A-Z]{1}\x5d/.test((arr2[it1])[0])) : {
+					str1 = [(/\x5bpath\x3dsidePath([A-Z]{1})\x5d/.exec((arr2[it1])[0]))[1], '-Tunnel'].join('');
+					break;
+				}
+				case (/\x5bpath\x3dwormhole[A-Z]{1}\x5d/.test((arr2[it1])[0])) : {
+					str1 = [(/\x5bpath\x3dwormhole([A-Z]{1})\x5d/.exec((arr2[it1])[0]))[1], '-Tunnel'].join('');
+					break;
+				}
+				case (/\x5bpath\x3dhomePlan[A-Z]{1}\x5d/.test((arr2[it1])[0])) : {
+					str1 = ['Plan ', (/\x5bpath\x3dhomePlan([A-Z]{1})\x5d/.exec((arr2[it1])[0]))[1]].join('');
+					break;
+				}
+				case (/\x5bpath\x3d[0-9A-Za-z]+\x5d/.test((arr2[it1])[0])) : {
+					str1 = ['path=', (/\x5bpath\x3d([0-9A-Za-z]+)\x5d/.exec((arr2[it1])[0]))[1]].join('');
+					break;
+				}
+				default : {
+					str1 = 'Undefined path name';
+				}
+			}
+			(arr2[it1]).splice(0, 1, str1);
+			it1++;
+		}
+		exploreData = arr2;
+		firstPass.splice(0, 1, false);
+		onChangeFile();
+	}
+	
+	function parseInfiniteLevels(param1){
+		let arr1 = param1.split('\r\n');
+		let arr2 = [];
+		let arr3 = new Array(329);
+		let it1 = 0;
+		while (it1 != arr1.length){
+			if (/layout\x2dtunnel/.test(arr1[it1])){
+				arr2.push([arr1[it1], parseInt((/id\x2d([0-9]+)\x7c/.exec(arr1[it1]))[1])]);
+			}
+			it1++;
+		}
+		it1 = 0;
+		while (it1 != arr2.length){
+			arr3.splice((arr2[it1])[1], 1, (arr2[it1])[0]);
+			it1++;
+		}
+		it1 = 0;
+		arr1 = [];
+		while (it1 != arr3.length){
+			switch(true){
+				case (arr2[it1] == undefined) : {
+					arr1.push([arr3[it1], 'No queue position']);
+					break;
+				}
+				case (arr3[it1] == undefined) : {
+					arr1.push(['No ID', (arr2[it1])[0]]);
+					break;
+				}
+				default: {
+					arr1.push([arr3[it1], (arr2[it1])[0]]);
+				}
+			}
+			it1++;
+		}
+		infiniteData = arr1;
+		firstPass.splice(1, 1, false);
+		onChangeFile();
+	}
+	
+	function extractLevel(){
+		let level = '';
+		switch (fileSelector.value){
+			case 'explore' : {
+				if (tunnelSelector == null || exploreSelector == null){
+					console.log('(I) preexistent data is null, can\'t run yet');
+					return;
+				}
+				level = (exploreData[tunnelSelector.value])[exploreSelector.value];
+				break;
+			}
+			case 'infinite' : {
+				if (indexSelector == null || idorqSelector == null){
+					console.log('(I) preexistent data is null, can\'t run yet');
+					return;
+				}
+				if (!(0 <= parseInt(indexSelector.value) && parseInt(indexSelector.value) <= 328)){
+					alert('I need an index of a number between 0 and 328, inclusive. (As an example, if you want to see level 93, just type \'93\' into the \'Index\' box.)');
+					return;
+				}
+				level = (infiniteData[parseInt(indexSelector.value)])[idorqSelector.value];
+				switch (level) {
+					case 'No ID' : {
+						alert('No level with ID ' + indexSelector.value + ' exists. Try a different ID.');
+						return;
+					}
+					case 'No queue position' : {
+						alert('There aren\'t enough Run 3 levels to reach queue position ' + indexSelector.value + '. Try a lower position.');
+						return;
+					}
+				}
+				break;
+			}
+			case 'custom' : {
+				if(rawDataSelector == null){
+					console.log('(C) preexistent data is null, can\'t run yet');
+				}
+				level = rawDataSelector.value;
+				switch (true) {
+					case (/layout\x2d/.test(level) && /terrain\x2d/.test(level)) : {
+						break;
+					}
+					case (/0x[0-9A-Fa-f]+\x7c[\x20-\x7b\x7d\x7e]*\x7c0x[0-9A-Fa-f]{6}/.test(level)) : {
+						level = run1ToRun3(level);
+						break;
+					}
+					default : {
+						alert('What you\'ve entered doesn\'t appear to be data for a Run 3 or Run 1 level; I can\'t render it.');
+						return;
+					}
+				}
+			}
+		}
+		console.log(level);
+		renderLevel(level);
+	}
+	
+	function clearRebuild(){
+		ColorArray = ['FFFFFF', 'FFFFFF'];
+		Chunk = 1;
+		Sides = 1;
+		ZLength = 1;
+		Power = 1;
+		GlobalTileWidth = 75;
+		TerrainArray = [];
+		TriggerArray = [];
+		SpawnArray = [];
+		endSpawnArray = [];
+	}
+	
+	function parseLevelData(param1){
+		let local1 = /\blayout\x2Dtunnel([0-9]+)\x2C([0-9]+)\b/g.exec(param1);
+		Chunk = Number(local1[1]) * Number(local1[2]);
+		Sides = Number(local1[2]);
+		while (SpawnArray.length < Chunk){
+			SpawnArray.push(false);
+			endSpawnArray.push(false);
+		}
+		local1 = param1.split('|');
+		if(local1.every((el) => !/^power\x2D[.0-9]+$/.test(el))){
+			local1.push('power-1'); // bandaid ass fix but idfk what else to do; tiles don't render properly now unless i do this
+		}
+		for (i = 0; i < local1.length; i++){
+			switch(true){
+				case /color[0-9]*\x2D0x[0-9A-Fa-f]{6}/g.test(local1[i]) : { // grab color data
+					let local2 = /color([0-9]*)\x2D0x([0-9A-Fa-f]{6})/g.exec(local1[i]);
+					if(local2[1] == ''){
+						local2.splice(1, 1, 0); // assume color 0 if not specified; i think the game does this?
+					}
+					while(ColorArray.length <= Number(local2[1])){
+						ColorArray.push('FFFFFF'); // assume 6 F (what the game does) if you have no color
+					}
+					ColorArray.splice(Number(local2[1]), 1, local2[2]); // splice the actual retrieved color to the array at the right spot
+					break;
+				}
+				case /^power\x2D[\x2D0-9.]+$/.test(local1[i]) :{ // grab power level
+					Power = parseFloat((/^power\x2D([\x2D0-9.]+)$/.exec(local1[i]))[1]);
 					switch (true){
-						case 1 <= local3 : {
-							local3 = 1;
+						case 1 <= Power : {
+							Power = 1;
 							break;
 						}
-						case 0 >= local3 : {
-							local3 = 0;
+						case 0 >= Power : {
+							Power = 0;
 						}
 					}
-					local2.push(local3);
+					TriggerArray.push(5,'power',Power);
+					break;
 				}
-				TriggerArray.push(local2);
-				switch((local4[1]).charCodeAt(0).toString(16).toUpperCase()){
-					case '3E' : {
-						local2.splice(1, 1, '' + local2[1] + ' (OLD)');
+				case /\btileWidth\x2D[0-9]+\b/.test(local1[i]) :{ // grab tile width
+					GlobalTileWidth = Number((/\btileWidth\x2D([0-9]+)\b/.exec(local1[i]))[1]);
+					break;
+				}
+				case /\bspawn\x2D[0-9]+\b/.test(local1[i]) : { // parse spawns
+					SpawnArray.splice(Number((/\bspawn\x2D([0-9]+)\b/.exec(local1[i]))[1]), 1, true);
+					break;
+				}
+				case /\bendSpawn\x2D[0-9]+\b/.test(local1[i]) : { // parse end spawns
+					endSpawnArray.splice(Number((/\bendSpawn\x2D([0-9]+)\b/.exec(local1[i]))[1]), 1, true);
+					break;
+				}
+				case /\btrigger\x2Dcondition\x2Dz/.test(local1[i]) : { // find trigger conditions
+					let local4 = /\btrigger\x2Dcondition\x2Dz([\x3E\x2C]{1})([0-9]+)/.exec(local1[i]);
+					let local2 = [parseInt(local4[2]) + 6, /\x7Eresult\x2D([0-9A-Za-z]+)/.exec(local1[i])[1]];
+					console.log(local2);
+					if(local2[0] == null){
+						
 					}
+					if(local2[1] == 'power'){
+						let local3 = parseFloat((/power\x2D([0-9.]+)/.exec(local1[i]))[1]);
+						switch (true){
+							case 1 <= local3 : {
+								local3 = 1;
+								break;
+							}
+							case 0 >= local3 : {
+								local3 = 0;
+							}
+						}
+						local2.push(local3);
+					}
+					TriggerArray.push(local2);
+					switch((local4[1]).charCodeAt(0).toString(16).toUpperCase()){
+						case '3E' : {
+							local2.splice(1, 1, '' + local2[1] + ' (OLD)');
+						}
+					}
+					TriggerArray = TriggerArray.flat();
+					console.log(TriggerArray);
+					break;
 				}
-				TriggerArray = TriggerArray.flat();
-				console.log(TriggerArray);
+				case /\bterrain\x2D/g.test(local1[i]) : { // parse terrain 
+					let local2 = [];
+					let local3 = (/pos\x2D([\x2A0-o]+)/g.exec(local1[i]))[1];
+					let local4 = '';
+					let local5 = [];
+					console.log(local3);
+					while(!/^[0-o]+$/.test(local3)){ // replace asterisks
+						local4 = (/[0-o]+([\x2A]+)[0-o]/g.exec(local3))[1];
+						local5 = (new RegExp('([0-o]{' + local4.length + '})[\\x2A]+([0-o]{1})')).exec(local3);
+						local3 = local3.split('' + local5[1] + '' + local4 + '' + local5[2] + '').join((local5[1]).repeat((local5[2]).charCodeAt(0) - 48));
+					}
+					local5 = [];
+					local3.split('').forEach((el) => {local5.push(((el).charCodeAt(0) - 48).toString(2).padStart(6,'0')); }); // convert from 0-o to binary
+					console.log(local3);
+					if(/^[01]+1[0]*$/.test(local5.join(''))){
+						local5 = (/^([01]+1)[0]*$/.exec(local5.join('')))[1].split('');
+					}
+					else {
+						local5 = local5.join('').split('');
+					}
+					local2.push(local5.join('')); // terrain data as first element of array
+					if (Math.ceil(local5.length / Chunk) > ZLength) {
+						ZLength = Math.ceil(local5.length / Chunk); // keeps a reminder of how long the level is; will be useful later
+					}
+					switch (true){ // now look for tiletype
+	                    case /\x7Ecrumbling\b/g.test(local1[i]): {
+	                        local4 = 'crumbling';
+	                        break;
+	                    }
+	                    case /\x7Eice\b/g.test(local1[i]): {
+	                        local4 = 'ice';
+	                        break;
+	                    }
+	                    case /\x7Eramp\b/g.test(local1[i]):
+	                    case /\x7EiceRamp\b/g.test(local1[i]): {
+	                        local4 = 'iceRamp';
+	                        break;
+	                    }
+	                    case /\x7EsteepRamp\b/g.test(local1[i]): { // i still wonder why these shits still need to be called 'steepRamps' like player03 oh my god your code is so weird sometimes 
+	                        local4 = 'steepRamp';
+	                        break;
+	                    }
+	                    case /\x7Eglow\b/g.test(local1[i]): {
+	                        local4 = 'glow';
+	                        break;
+	                    }
+	                    case /\x7Efast\b/g.test(local1[i]): {
+	                        local4 = 'fast';
+	                        break;
+	                    }
+	                    case /\x7Eslow\b/g.test(local1[i]): {
+	                        local4 = 'slow';
+	                        break;
+	                    }
+	                    case /\x7Eleft\b/g.test(local1[i]): {
+	                        local4 = 'left';
+	                        break;
+	                    }
+	                    case /\x7Eright\b/g.test(local1[i]): {
+	                        local4 = 'right';
+	                        break;
+	                    }
+	                    case /\x7Ebounce\b/g.test(local1[i]):
+	                    case /\x7Ebouncy\b/g.test(local1[i]): { // i blame a16 for the 'bounce' checker
+	                        local4 = 'bouncy';
+	                        break;
+	                    }
+	                    case /\x7Ebattery\b/g.test(local1[i]): {
+	                        local4 = 'battery';
+	                        break;
+	                    }
+	                    case /\x7Emovable\b/g.test(local1[i]): {
+	                        local4 = 'movable';
+	                        break;
+	                    }
+	                    case /\x7Ewarning\b/g.test(local1[i]):
+	                    case /\x7Etexture\x2DWarningStripes\b/g.test(local1[i]): { // honestly it should have become 'warning' way earlier
+	                        local4 = 'warning';
+	                        break;
+	                    }
+	                    case /\x7Ebox\b/g.test(local1[i]): {
+	                        local4 = 'box';
+	                        break;
+	                    }
+	                    case /\x7ErotatedZBox\b/g.test(local1[i]): {
+	                        local4 = 'rotatedZBox';
+	                        break;
+	                    }
+	                    case /\x7EmovableBox\b/g.test(local1[i]): {
+	                        local4 = 'movableBox';
+	                        break;
+	                    }
+	                    case /\x7EopenBox\b/g.test(local1[i]): {
+	                        local4 = 'openBox';
+	                        break;
+	                    }
+	                    case /\x7Eruined\b/g.test(local1[i]): { // tiletypes from here on are barely relevant; i only really define them for legacy reasons
+	                        local4 = 'ruined';
+	                        break;
+	                    }
+	                    case /\x7Ebridge\b/g.test(local1[i]): {
+	                        local4 = 'bridge';
+	                        break;
+	                    }
+	                    case /\x7Einverse\b/g.test(local1[i]): {
+	                        local4 = 'inverse';
+	                        break;
+	                    }
+	                    case /\x7Enonrotating\b/g.test(local1[i]): {
+	                        local4 = 'nonrotating';
+	                        break;
+	                    }
+	                    case /\x7Esticky\b/g.test(local1[i]): {
+	                        local4 = 'sticky';
+	                        break;
+	                    }
+	                    case /\x7Espawn\b/g.test(local1[i]): {
+	                        local4 = 'spawn';
+	                        break;
+	                    }
+	                    case /\x7Etexture\x2DArrow\b/g.test(local1[i]):
+	                    case /\x7EendSpawn\b/g.test(local1[i]): {
+	                        local4 = 'endSpawn';
+	                        break;
+	                    }
+	                    default: { // except this one, this is slightly important
+	                        local4 = 'normal';
+	                    }
+	                }
+	                local2.push(local4); // tiletype as second element of array
+					local4 = '0'; // check to see if there's a color specification
+					if (/\bcolor\x2D[0-9]+\b/g.test(local1[i])){
+						local4 = (/\bcolor\x2D([0-9]+)\b/g.exec(local1[i]))[1];
+					}
+					local2.push(local4); // push color id as third element
+					TerrainArray.push(local2); // now put it on the stack
+					break;
+				}	
+			}
+		}
+		ZLength += 2;
+	}
+	
+	function renderLevel(param1){
+		clearRebuild();
+		parseLevelData(param1);
+		let local1 = [];
+		let local3 = [];
+		let local4 = [];
+		for (i = 0; i < Chunk * ZLength; i++){
+			local1.push('<td class="nothing" style="background-color: #0000;"></td>');
+		}
+		let val = 0;
+		while (val < Chunk){
+			if(SpawnArray[val]){
+				local1.splice(val, 1, '<td class="spawn" style="background-color: #' + cInterpolate('000000', ColorArray[0], Power) + ';"><img src="./images/Arrow.png" style="width: 100%; height: 100%; rotate: 180deg;"></td>');
+			}
+			else {
+				local1.splice(val, 1, '<td class="nonSpawn" style="background-color: #' + cInterpolate('000000', ColorArray[0], Power) + ';"></td>');
+			}
+			val++;
+		}
+		val = 0;
+		while (val < TerrainArray.length){
+			console.log('adding terrain in TerrainArray[' + val + ']...')
+			local4 = ((TerrainArray[val])[0]).split('');
+			for (j = 0; j < Chunk * ZLength; j++){
+				if(((j % Chunk) == 0) && (TriggerArray.includes(((j - Chunk) / Chunk) + 6))){
+					if(/power/.test(TriggerArray[TriggerArray.indexOf(((j - Chunk) / Chunk) + 6) + 1])){
+						Power = TriggerArray[TriggerArray.indexOf(((j - Chunk) / Chunk) + 6) + 2];
+					}
+					local3 = getTileAsHTML(TerrainArray[val]);
+				}
+				if(local4[j] == '1'){
+					local1.splice(j + Chunk, 1, local3[Math.floor(Math.random() * local3.length)]);
+				}
+			}
+			val++;
+		}
+		val = 0;
+		while (val < Chunk){
+			if(endSpawnArray[val]){
+				local1.splice(val + (Chunk * ZLength) - Chunk, 1, '<td class="endSpawn" style="background-color: #' + cInterpolate('000000', ColorArray[0], Power) + ';"><img src="./images/Arrow.png" style="width: 100%; height: 100%;"></td>');
+			}
+			else {
+				local1.splice(val + (Chunk * ZLength) - Chunk, 1, '<td class="nonSpawn" style="background-color: #' + cInterpolate('000000', ColorArray[0], Power) + ';"></td>');
+			}
+			val++;
+		}
+		let HTMLArray = ['<style>td{width: ' + (0.5 * GlobalTileWidth) + 'px; height: ' + (0.5 * GlobalTileWidth) + 'px;}</style><tbody>'];
+		for (let i = 0; i < Chunk * ZLength; i++){
+			if ((i % Chunk) == 0){
+				if(TriggerArray.includes(((i - Chunk) / Chunk) + 5) && 0 != ((i - Chunk) / Chunk)){
+					HTMLArray.push('<tr><td class="trigger" style="background-color: #FFF7; width: 100%; height: 20px; margin: auto; text-align: center; font-family: \'IBM Plex Mono\';">' + TriggerArray[TriggerArray.indexOf(((i - Chunk) / Chunk) + 5) + 1] + '</td></tr>');
+				}
+				HTMLArray.push('<tr>');
+			}
+			if ((i % Sides) == 0){
+				HTMLArray.push('<td class="corner" style="background-color: #' + cInterpolate(ColorArray[0], 'ffffff', 0.4) + '33; width: 0px; height: ' + (0.5 * GlobalTileWidth) + 'px;"></td>');
+			}
+			HTMLArray.push(local1[i]);
+			if (((i + 1) % Chunk) == 0){
+				HTMLArray.push('<td class="corner" style="background-color: #' + cInterpolate(ColorArray[0], 'ffffff', 0.4) + '33; width: 0px; height: ' + (0.5 * GlobalTileWidth) + 'px;"></td>');
+				HTMLArray.push('</tr>');
+			}
+		}
+		HTMLArray.push('</tbody>');
+		mapTable1.innerHTML = HTMLArray.join('');
+		mapTable2.innerHTML = HTMLArray.join('');
+	}
+	
+	function run1ToRun3(param1){
+		let local1 = /\b0x([0-9A-Fa-f]+)\x7C[\x20-\x7B\x7D\x7E]*\x7C0x([0-9A-Fa-f]{6})\b/.exec(param1);
+		let local2 = [];
+		let local3 = [];
+		(local1[1]).split('').forEach((el) => {local2.push(parseInt(el, 16).toString(2).padStart(4, '0')); });
+		console.log(local2);
+		local2 = (/^([01]+1)[0]*$/.exec(local2.join('')))[1].split('').toSpliced(0, 0, '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1');
+		while ((local2.length % 6) != 0){
+			local2.push('0');
+		}
+		for (i = 0; i < local2.length / 6; i++){ '1',
+			local3.push(String.fromCharCode(48 + parseInt(local2.slice(6 * i, 6 * (i + 1)).join(''), 2)));
+		}
+		console.log(local3);
+		return 'layout-tunnel4,4|color-0x' + cInterpolate(local1[2], 'ffffff', 0.22) + '|spawn-5|tileWidth-85|terrain-pos-' + local3.join('') + '';
+	}
+	
+	function cInterpolate(color1, color2, multiplier){
+		switch (true){
+			case 1 <= multiplier : {
+				return color2;
 				break;
 			}
-			case /\bterrain\x2D/g.test(local1[i]) : { // parse terrain 
-				let local2 = [];
-				let local3 = (/pos\x2D([\x2A0-o]+)/g.exec(local1[i]))[1];
-				let local4 = '';
-				let local5 = [];
-				console.log(local3);
-				while(!/^[0-o]+$/.test(local3)){ // replace asterisks
-					local4 = (/[0-o]+([\x2A]+)[0-o]/g.exec(local3))[1];
-					local5 = (new RegExp('([0-o]{' + local4.length + '})[\\x2A]+([0-o]{1})')).exec(local3);
-					local3 = local3.split('' + local5[1] + '' + local4 + '' + local5[2] + '').join((local5[1]).repeat((local5[2]).charCodeAt(0) - 48));
-				}
-				local5 = [];
-				local3.split('').forEach((el) => {local5.push(((el).charCodeAt(0) - 48).toString(2).padStart(6,'0')); }); // convert from 0-o to binary
-				console.log(local3);
-				if(/^[01]+1[0]*$/.test(local5.join(''))){
-					local5 = (/^([01]+1)[0]*$/.exec(local5.join('')))[1].split('');
-				}
-				else {
-					local5 = local5.join('').split('');
-				}
-				local2.push(local5.join('')); // terrain data as first element of array
-				if (Math.ceil(local5.length / Chunk) > ZLength) {
-					ZLength = Math.ceil(local5.length / Chunk); // keeps a reminder of how long the level is; will be useful later
-				}
-				switch (true){ // now look for tiletype
-                    case /\x7Ecrumbling\b/g.test(local1[i]): {
-                        local4 = 'crumbling';
-                        break;
-                    }
-                    case /\x7Eice\b/g.test(local1[i]): {
-                        local4 = 'ice';
-                        break;
-                    }
-                    case /\x7Eramp\b/g.test(local1[i]):
-                    case /\x7EiceRamp\b/g.test(local1[i]): {
-                        local4 = 'iceRamp';
-                        break;
-                    }
-                    case /\x7EsteepRamp\b/g.test(local1[i]): { // i still wonder why these shits still need to be called 'steepRamps' like player03 oh my god your code is so weird sometimes 
-                        local4 = 'steepRamp';
-                        break;
-                    }
-                    case /\x7Eglow\b/g.test(local1[i]): {
-                        local4 = 'glow';
-                        break;
-                    }
-                    case /\x7Efast\b/g.test(local1[i]): {
-                        local4 = 'fast';
-                        break;
-                    }
-                    case /\x7Eslow\b/g.test(local1[i]): {
-                        local4 = 'slow';
-                        break;
-                    }
-                    case /\x7Eleft\b/g.test(local1[i]): {
-                        local4 = 'left';
-                        break;
-                    }
-                    case /\x7Eright\b/g.test(local1[i]): {
-                        local4 = 'right';
-                        break;
-                    }
-                    case /\x7Ebounce\b/g.test(local1[i]):
-                    case /\x7Ebouncy\b/g.test(local1[i]): { // i blame a16 for the 'bounce' checker
-                        local4 = 'bouncy';
-                        break;
-                    }
-                    case /\x7Ebattery\b/g.test(local1[i]): {
-                        local4 = 'battery';
-                        break;
-                    }
-                    case /\x7Emovable\b/g.test(local1[i]): {
-                        local4 = 'movable';
-                        break;
-                    }
-                    case /\x7Ewarning\b/g.test(local1[i]):
-                    case /\x7Etexture\x2DWarningStripes\b/g.test(local1[i]): { // honestly it should have become 'warning' way earlier
-                        local4 = 'warning';
-                        break;
-                    }
-                    case /\x7Ebox\b/g.test(local1[i]): {
-                        local4 = 'box';
-                        break;
-                    }
-                    case /\x7ErotatedZBox\b/g.test(local1[i]): {
-                        local4 = 'rotatedZBox';
-                        break;
-                    }
-                    case /\x7EmovableBox\b/g.test(local1[i]): {
-                        local4 = 'movableBox';
-                        break;
-                    }
-                    case /\x7EopenBox\b/g.test(local1[i]): {
-                        local4 = 'openBox';
-                        break;
-                    }
-                    case /\x7Eruined\b/g.test(local1[i]): { // tiletypes from here on are barely relevant; i only really define them for legacy reasons
-                        local4 = 'ruined';
-                        break;
-                    }
-                    case /\x7Ebridge\b/g.test(local1[i]): {
-                        local4 = 'bridge';
-                        break;
-                    }
-                    case /\x7Einverse\b/g.test(local1[i]): {
-                        local4 = 'inverse';
-                        break;
-                    }
-                    case /\x7Enonrotating\b/g.test(local1[i]): {
-                        local4 = 'nonrotating';
-                        break;
-                    }
-                    case /\x7Esticky\b/g.test(local1[i]): {
-                        local4 = 'sticky';
-                        break;
-                    }
-                    case /\x7Espawn\b/g.test(local1[i]): {
-                        local4 = 'fakeSpawn';
-                        break;
-                    }
-                    case /\x7Etexture\x2DArrow\b/g.test(local1[i]):
-                    case /\x7EendSpawn\b/g.test(local1[i]): {
-                        local4 = 'fakeEndSpawn';
-                        break;
-                    }
-                    default: { // except this one, this is slightly important
-                        local4 = 'normal';
-                    }
-                }
-                local2.push(local4); // tiletype as second element of array
-				local4 = '0'; // check to see if there's a color specification
-				if (/\bcolor\x2D[0-9]+\b/g.test(local1[i])){
-					local4 = (/\bcolor\x2D([0-9]+)\b/g.exec(local1[i]))[1];
-				}
-				local2.push(local4); // push color id as third element
-				TerrainArray.push(local2); // now put it on the stack
+			case 0 >= multiplier : {
+				return color1;
 				break;
-			}	
+			}
 		}
+		let c1 = /^([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/.exec(color1);
+		let c2 = /^([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/.exec(color2);
+		let cC = [];
+		for (i = 1; i <= 3; i++){
+			cC.push(Math.round((parseInt(c1[i], 16) * (1 - multiplier)) + (parseInt(c2[i], 16) * (multiplier))).toString(16).padStart(2, '0'));
+		}
+		return '' + cC.join('') + '';
 	}
-	ZLength += 2;
-}
 
-function run1ToRun3(param1){
-	let local1 = /\b0x([0-9A-Fa-f]+)\x7C[\x20-\x7B\x7D\x7E]*\x7C0x([0-9A-Fa-f]{6})\b/.exec(param1);
-	let local2 = [];
-	let local3 = [];
-	(local1[1]).split('').forEach((el) => {local2.push(parseInt(el, 16).toString(2).padStart(4, '0')); });
-	console.log(local2);
-	local2 = (/^([01]+1)[0]*$/.exec(local2.join('')))[1].split('').toSpliced(0, 0, '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', '1');
-	while ((local2.length % 6) != 0){
-		local2.push('0');
-	}
-	for (i = 0; i < local2.length / 6; i++){ '1',
-		local3.push(String.fromCharCode(48 + parseInt(local2.slice(6 * i, 6 * (i + 1)).join(''), 2)));
-	}
-	console.log(local3);
-	return 'layout-tunnel4,4|color-0x' + cInterpolate(local1[2], 'ffffff', 0.22) + '|spawn-5|tileWidth-85|terrain-pos-' + local3.join('') + '';
-}
-
-function cInterpolate(color1, color2, multiplier){
-	switch (true){
-		case 1 <= multiplier : {
-			return color2;
-			break;
-		}
-		case 0 >= multiplier : {
-			return color1;
-			break;
-		}
-	}
-	let c1 = /^([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/.exec(color1);
-	let c2 = /^([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/.exec(color2);
-	let cC = [];
-	for (i = 1; i <= 3; i++){
-		cC.push(Math.round((parseInt(c1[i], 16) * (1 - multiplier)) + (parseInt(c2[i], 16) * (multiplier))).toString(16).padStart(2, '0'));
-	}
-	console.log([c1,c2,multiplier,cC])
-	return '' + cC.join('') + '';
-}
-
-function getTileAsHTML(param1){
-	let tiles = [];
-	switch (param1[1]){
-		case 'crumbling' : {
-			for (let j = 1; j <= 8; j++){
-				tiles.push('<td class="crumbling" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/CrumblingTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
-			}
-			break;
-		}
-		case 'ice' : {
-			for (let j = 1; j <= 4; j++){
-				tiles.push('<td class="ice" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/IceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
-			}
-			break;
-		}
-		case 'steepRamp' : {
-			tiles.push('<td class="steepRamp" style="background: no-repeat url(./images/RampOverlay.png); background-size: contain; background-color:#' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
-			break;
-		}
-		case 'iceRamp' : {
-			for (let j = 1; j <= 4; j++){
-				tiles.push('<td class="iceRamp" style="background: no-repeat url(./images/RampOverlay.png), linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/IceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
-			}
-			break;
-		}
-		case 'glow' : {
-			tiles.push('<td class="glow" style="background-color: #' + cInterpolate(ColorArray[Number(param1[2])],'dddddd',0.2) + ';"></td>');
-			break;
-		}
-		case 'fast' : {
-			tiles.push('<td class="fast" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/Acceleration-180.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
-			break;
-		}
-		case 'slow' : {
-			tiles.push('<td class="slow" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/Acceleration.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
-			break;
-		}
-		case 'left' : {
-			tiles.push('<td class="left" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/Acceleration-90L.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
-			break;
-		}
-		case 'right' : {
-			tiles.push('<td class="right" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/Acceleration-90R.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
-			break;
-		}
-		case 'bouncy' : {
-			tiles.push('<td class="bouncy" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/bounce.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
-			break;
-		}
-		case 'battery' : {
-			tiles.push('<td class="battery" style="background-color: #0000;"><img src="./images/Battery.png" style="rotate: 0deg; width: 100%; height: 100%;"></td>');
-			break;
-		}
-		case 'movable' : {
-			tiles.push('<td class="movable" style="background: no-repeat url(./images/Ring.png); background-size: contain; background-color:#' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
-			break;
-		}
-		case 'warning' : {
-			tiles.push('<td class="warning" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/WarningStripes.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
-			break;
-		}
-		case 'box' : {
-			tiles.push('<td class="box" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'dddddd', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (2 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';"></td>');
-			break;
-		}
-		case 'rotatedZBox' : { // OH MY FUCKING GOD FUCK YOU
-			tiles.push('<td class="rotatedZBox" style="background-color: #0000;"><div style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'cccccc', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (4 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + '; width: 100%; height: 100%; transform: matrix(0.5, 0.2, 0, 0.6, ' + (0.125 * GlobalTileWidth) + ', -' + (0.0625 * GlobalTileWidth) + ');"></div><div style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'eeeeee', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (4 / 75))  + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + '; width: 100%; height: 100%; transform: matrix(-0.5, 0.2, 0, 0.6, -' + (0.125 * GlobalTileWidth) + ', -' + (0.5625 * GlobalTileWidth) + ');"></div><div style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'aaaaaa', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (4 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + '; width: 100%; height: 100%; transform: matrix(0.5, -0.2, 0.5, 0.2, 0, -' + (0.8625 * GlobalTileWidth) +');"></div></td>'); // THIS IS FUCKING INSANE AAAAAAAAAAAAAAAAGH
-			break;
-		}
-		case 'movableBox' : {
-			tiles.push('<td class="box" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'dddddd', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (2 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';"><img src="./images/Ring.png" style="width: 100%; height: 100%;"></td>');
-			break;
-		}
-		case 'openBox' : { // NOT YOU TOO
-			tiles.push('<td class="openBox" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], '999999', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (2 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ', inset 0em 0em ' + Math.ceil(GlobalTileWidth * (10 / 75)) + 'px ' + (GivenBoxBorderWidth * 2) + 'px #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'dddddd', 0.85), Power) + ';"><div style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'dddddd', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (3.2 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + '; width: 100%; height: 100%; transform: matrix(' + (Math.cos(2 * Math.PI / 3)) + ', ' + (-1 * Math.sin(2 * Math.PI / 3)) + ', ' + (Math.sin(2 * Math.PI / 3)) + ', ' + (Math.cos(2 * Math.PI / 3)) + ', ' + Math.ceil(GlobalTileWidth * (10 / 75)) + ', ' + (-1 * Math.ceil(GlobalTileWidth * (10 / 75))) + ');"></div></td>');
-			break;
-		}
-		case 'ruined' : {
-			for (j = 1; j <= 8; j++){
-				tiles.push('<td class="ruined" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), #' + cInterpolate(ColorArray[Number(param1[2])],'b0b0b0',0.1) + ' no-repeat url(./images/RuinedTile' + j + '.png); background-size: contain; rotate: 90deg; width: 100%; height: 100%;"></td>');
-			}
-			break;
-		}
-		case 'bridge' : {
-			tiles.push('<td class="bridge" style="background: no-repeat url(./images/bridge.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
-			break;
-		}
-		case 'inverse' : {
-			tiles.push('<td class="inverse" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], '550055', 0.8), Power) + ';"></td>');
-			break;
-		}
-		case 'nonrotating' : {
-			tiles.push('<td class="nonrotating" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], '000000', 0.3), Power) + ';"></td>');
-			break;
-		}
-		case 'sticky' : {
-			tiles.push('<td class="sticky" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], '88990c', 0.9), Power) + ';"></td>');
-			break;
-		}
-		case 'fakeSpawn' : {
-			tiles.push('<td class="fakeSpawn" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%; rotate: 180deg;"></td>');
+	function getTileAsHTML(param1){
+		let tiles = [];
+		switch (param1[1]){
+			case 'crumbling' : {
+				for (let j = 1; j <= 8; j++){
+					tiles.push('<td class="crumbling" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/CrumblingTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+				}
 				break;
+			}
+			case 'ice' : {
+				for (let j = 1; j <= 4; j++){
+					tiles.push('<td class="ice" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/IceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+				}
+				break;
+			}
+			case 'steepRamp' : {
+				tiles.push('<td class="steepRamp" style="background: no-repeat url(./images/RampOverlay.png); background-size: contain; background-color:#' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'iceRamp' : {
+				for (let j = 1; j <= 4; j++){
+					tiles.push('<td class="iceRamp" style="background: no-repeat url(./images/RampOverlay.png), linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/IceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+				}
+				break;
+			}
+			case 'glow' : {
+				tiles.push('<td class="glow" style="background-color: #' + cInterpolate(ColorArray[Number(param1[2])],'dddddd',0.2) + ';"></td>');
+				break;
+			}
+			case 'fast' : {
+				tiles.push('<td class="fast" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/Acceleration-180.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'slow' : {
+				tiles.push('<td class="slow" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/Acceleration.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'left' : {
+				tiles.push('<td class="left" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/Acceleration-90L.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'right' : {
+				tiles.push('<td class="right" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/Acceleration-90R.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'bouncy' : {
+				tiles.push('<td class="bouncy" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/bounce.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'battery' : {
+				tiles.push('<td class="battery" style="background-color: #0000;"><img src="./images/Battery.png" style="rotate: 0deg; width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'movable' : {
+				tiles.push('<td class="movable" style="background: no-repeat url(./images/Ring.png); background-size: contain; background-color:#' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'warning' : {
+				tiles.push('<td class="warning" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/WarningStripes.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'box' : {
+				tiles.push('<td class="box" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'dddddd', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (2 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';"></td>');
+				break;
+			}
+			case 'rotatedZBox' : { // OH MY FUCKING GOD FUCK YOU
+				tiles.push('<td class="rotatedZBox" style="background-color: #0000;"><div style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'cccccc', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (4 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + '; width: 100%; height: 100%; transform: matrix(0.5, 0.2, 0, 0.6, ' + (0.125 * GlobalTileWidth) + ', -' + (0.0625 * GlobalTileWidth) + ');"></div><div style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'eeeeee', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (4 / 75))  + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + '; width: 100%; height: 100%; transform: matrix(-0.5, 0.2, 0, 0.6, -' + (0.125 * GlobalTileWidth) + ', -' + (0.5625 * GlobalTileWidth) + ');"></div><div style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'aaaaaa', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (4 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + '; width: 100%; height: 100%; transform: matrix(0.5, -0.2, 0.5, 0.2, 0, -' + (0.8625 * GlobalTileWidth) +');"></div></td>'); // THIS IS FUCKING INSANE AAAAAAAAAAAAAAAAGH
+				break;
+			}
+			case 'movableBox' : {
+				tiles.push('<td class="box" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'dddddd', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (2 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';"><img src="./images/Ring.png" style="width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'openBox' : { // NOT YOU TOO
+				tiles.push('<td class="openBox" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], '999999', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (2 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ', inset 0em 0em ' + Math.ceil(GlobalTileWidth * (10 / 75)) + 'px ' + (GivenBoxBorderWidth * 2) + 'px #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'dddddd', 0.85), Power) + ';"><div style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'dddddd', 0.85), Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (3.2 / 75)) + 'px #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + '; width: 100%; height: 100%; transform: matrix(' + (Math.cos(2 * Math.PI / 3)) + ', ' + (-1 * Math.sin(2 * Math.PI / 3)) + ', ' + (Math.sin(2 * Math.PI / 3)) + ', ' + (Math.cos(2 * Math.PI / 3)) + ', ' + Math.ceil(GlobalTileWidth * (10 / 75)) + ', ' + (-1 * Math.ceil(GlobalTileWidth * (10 / 75))) + ');"></div></td>');
+				break;
+			}
+			case 'ruined' : {
+				for (j = 1; j <= 8; j++){
+					tiles.push('<td class="ruined" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), #' + cInterpolate(ColorArray[Number(param1[2])],'b0b0b0',0.1) + ' no-repeat url(./images/RuinedTile' + j + '.png); background-size: contain; rotate: 90deg; width: 100%; height: 100%;"></td>');
+				}
+				break;
+			}
+			case 'bridge' : {
+				tiles.push('<td class="bridge" style="background: no-repeat url(./images/bridge.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'inverse' : {
+				tiles.push('<td class="inverse" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], '550055', 0.8), Power) + ';"></td>');
+				break;
+			}
+			case 'nonrotating' : {
+				tiles.push('<td class="nonrotating" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], '000000', 0.3), Power) + ';"></td>');
+				break;
+			}
+			case 'sticky' : {
+				tiles.push('<td class="sticky" style="background-color: #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], '88990c', 0.9), Power) + ';"></td>');
+				break;
+			}
+			case 'spawn' : {
+				tiles.push('<td class="downArrow" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%; rotate: 180deg;"></td>');
+					break;
+			}
+			case 'endSpawn' : {
+				tiles.push('<td class="upArrow" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%;"></td>');
+				break;
+			}
+			default : {
+				tiles.push('<td class="normal" style="background-color: #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';"></td>');
+				break;
+			}
 		}
-		case 'fakeEndSpawn' : {
-			tiles.push('<td class="fakeEndSpawn" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%;"></td>');
-			break;
-		}
-		default : {
-			tiles.push('<td class="normal" style="background-color: #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';"></td>');
-			break;
-		}
+		return tiles;
 	}
-	return tiles;
-}
-
+	
+	fileSelector.onchange = onChangeFile;
+	document.getElementById('loaderButton').addEventListener("click", extractLevel);
+	onChangeFile();
+	
 </script>
 <link href='https://fonts.googleapis.com/css?family=Comfortaa' rel='stylesheet'>
 <link href='https://fonts.googleapis.com/css?family=Permanent+Marker' rel='stylesheet'>
 <link href='https://fonts.googleapis.com/css?family=IBM+Plex+Mono' rel='stylesheet'>
 <style>
+
 body {
     background-image: url("./images/Skybox5.png");
     background-color: black;
+	color:white;
+	font-family: 'Comfortaa';
 }
-#leveldatalabel {
-    color: white;
-    font-family: 'Comfortaa';
-    font-size: 18px;
+
+select {
+	background-color: black;
+	color: white;
+    font-family: 'Arial';
+	font-size: 14px;
 }
-#loaderButton {
-    background-color: black;
-    color: white;
-    font-family: 'Permanent Marker';
-    font-size: 12px;
+
+option {
+	background-color: black;
+	color: white;
+	font-size: 14px;
+	font-family: 'Arial';
+	font-weight: normal;
 }
-#loaderButton:hover {
-    background-color: #222;
-}
-#leveldataTextInput {
+
+input {
+	background-color: black;
+	color:white;
     font-family: 'IBM Plex Mono';
-    font-size: 12px;
-    background-color: black;
-    color: white;
-    min-width: 100%;
-    max-width: 100%;
+	font-size: 14px;
 }
-#leveldataTextInput:hover {
+
+#loaderButton {
+    font-family: 'Permanent Marker';
+	font-size: 12px;
+}
+
+label {
+	font-size: 18px;
+}
+
+input:hover {
     background-color: #222;
 }
-#textinputcontainer {
-    width: 100%;
+
+#selectorBox {
+	width: 100%;
     display: grid;
     grid-template-areas: "a a a";
     gap: 5px;
     grid-auto-columns: max-content auto 50px;
 }
-#LevelLoadingSpaceOuter{
+
+tr {
+	display: flex;
+}
+
+td {
+	border: 0px;
+}
+
+#outerLoadingSpace{
 	display: grid;
 	grid-template-areas: "a a";
 	gap: 0px;
@@ -538,10 +970,5 @@ body {
 	overflow-x: scroll;
 	overflow-y: clip;
 }
-tr {
-	display: flex;
-}
-td {
-	border: 0px;
-}
+
 </style></html>
