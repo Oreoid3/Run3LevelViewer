@@ -24,6 +24,10 @@
                     endUrl = 'https://en.wikipedia.org/w/index.php?search=' + /^w\x20([\x20-\x7e]+)$/.exec(val1)[1].split(' ').join('_') + '&title=Special:Search&profile=advanced&fulltext=1&ns0=1';
                     break;
                 }
+                case /[Ee][Dd][Ii][Tt]/.test(val1) : {
+                    endUrl = 'https://github.com/Oreoid3/Run3LevelViewer/edit/main/newtab.html';
+                    break;
+                }
                 case /^[Yy][Oo][Uu][Tt][Uu][Bb][Ee]$/g.test(val1) || /^[Yy][Tt]$/g.test(val1) : {
                     endUrl = 'https://www.youtube.com/';
                     break;
