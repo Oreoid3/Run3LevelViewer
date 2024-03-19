@@ -1,0 +1,172 @@
+<!DOCTYPE html> <html>
+    <title>New Tab</title>
+    <body>
+        <div id="searchbarcontainer">
+            <input type="text" placeholder="Search..." id="searchtext" class="search" />
+            <button id="searchbutton" onclick="search()" class="search">Go</button>
+        </div>
+    </body>
+    <script>
+
+        const GalleryImageReference = ['Mention the number 0.png', 'Im1.png', 'Screenshot 2018-01-11 at 11.13.37 AM.png', 'Screenshot 2018-01-10 at 8.00.01 AM.png', 'IM 4.png', 'IM 5.png', 'IM 6.png', 'IM 7.png', 'IM 8.png', 'IM 9.png', 'IM 10.png', 'IM 11.png', 'IM 12.png', 'IM 13.png', 'IM 14.png', 'Im15.png', 'IM 16.png', 'Im17.png', 'Im18.png', 'Im19.png', 'Im20ricketyscaffolding.png', 'IM 21.png', 'IM 22.png', 'IM 23.png', 'IM 24.png', 'IM 25.png', 'IM 26.png', 'IM 27.png', 'IM 28.png', 'IM 29.png', 'Im30.png', 'IM 31.png', 'IM 32.png', 'IM 33.png', 'IM 34.png', '35.png', 'IM 36.png', 'IM 37.png', 'Im 38 new.png', 'IM 39.png', 'IM 40.png', 'IM 41.png', 'IM 42.png', 'Im43.png', 'IM 44.png', 'Im45.png', 'Screenshot 2018-01-10 at 11.13.15 AM.png', 'Im47.png', 'IM 48.png', 'Screenshot 2018-01-11 at 11.06.50 AM.png', 'Screenshot 2018-01-11 at 11.16.11 AM.png', 'IM 51.png', 'Im52.png', 'Im 53.png', 'IM 54.png', 'IM 55.png', 'IM 56.png', 'IM 57.png', 'IM 58.png', 'IM 59.png', 'IM 60.png', 'IM 61.png', 'IM 62.png', 'IM 63.png', 'IM 64.png', 'IM 65.png', 'IM 66.png', 'IM 67.png', 'IM 68.png', 'IM 69.png', 'IM 70.png', 'IM 71.png', 'IM 72.png', 'IM 73.png', 'IM 74.png', 'IM 75.png', 'IM 76.png', 'IM 77.png', 'IM 78.png', 'IM 79.png', 'IM 80.png', 'IM 81.png', 'IM 82.png', 'IM 83.png', 'IM 84.png', 'IM 85.png', 'IM 86.png', 'Screenshot 2018-01-10 at 8.00.54 AM.png', '88.png', 'IM 89.png', 'Im90.png', 'IM 91.png', 'IM 92.png', 'IM 93.png', 'IM 94.png', 'IM 95.png', 'IM 96.png', 'IM 97.png', 'IM 98.png', 'IM 99.png', 'IM 100.png', 'IM 101.png', 'IM 102.png', 'IM 103.png', 'IM 104.png', 'IM 105.png', 'IM 106.png', 'IM 107.png', 'IM 108.png', 'IM 109.png', 'IM 110.png', 'IM 111.png', 'IM 112.png', 'Im113.png', 'IM 114.png', 'IM 115.png', 'IM 116.png', 'Lllllllll.png', 'IM 118.png', 'IM 119.png', 'IM 120.png', 'IM 121.png', 'IM 122.png', 'IM 123.png', 'IM 124.png', 'IM 125.png', 'IM 126.png', 'IM 127.png', 'IM 128.png', '129.png', 'Screenshot 2018-01-10 at 11.20.51 AM.png', 'IM 131.png', 'IM 132.png', 'IM 133.png', 'IM 134.png', 'IM 135.png', 'IM 136.png', 'IM 137.png', 'IM 138.png', 'IM 139.png', 'IM 140.png', 'IM 141.png', 'IM 142.png', 'IM 143.png', 'IM 144.png', 'IM 145.png', 'Im 146.png', 'IM 147.png', 'IM 148.png', 'IM 149.png', 'IM 150.png', 'IM 151.png', 'IM 152.png', 'IM 153.png', 'IM 154.png', 'IM 155.png', 'IM 156.png', 'IM 157.png', 'IM 158.png', 'IM 159.png', 'IM 160.png', 'IM 161.png', 'IM 162.png', 'IM 163.png', 'IM 164.png', 'IM 165.png', 'IM 166.png', 'IM 167.png', 'IM 168.png', 'IM 169.png', 'IM 170.png', 'IM 171.png', 'IM 172.png', 'IM 173.png', 'IM 174.png', 'IM 175.png', 'IM 176.png', 'IM 177.png', 'IM 178.png', 'IM 179.png', 'IM 180.png', 'IM 181.png', 'IM 182.png', 'IM 183.png', 'Screenshot 2018-01-10 at 11.17.34 AM.png', 'Im185.png', 'Dark Is Not Evil.png', 'Screenshot 2018-01-09 at 1.44.54 PM.png', 'IM 188.png', 'IM 189.png', 'IM 190.png', 'IM 191.png', 'IM 192.png', 'IM 193.png', 'IM 194.png', 'IM 195.png', 'IM 196.png', 'IM 197.png', 'IM 198.png', 'IM 199.png', 'IM 200.png', 'IM 201 new.png', '202.png', 'IM 203.png', 'IM 204.png', 'I Found The Pattern! (205).png', '206 new.png', 'IM 207.png', 'IM 208.png', 'IM 209.png', 'IM 210.png', '211.png', 'IM 212.png', 'IM 213.png', 'Angled Surface Enthusiast.png', 'IM 215.png', 'IM 216.png', 'IM 217.png', 'IM 218.png', 'IM 219.png', 'IM 220.png', 'IM 221.png', 'Im222.png', 'IM 223.png', 'IM 224.png', 'IM 225.png', 'IM 226.png', 'IM 227.png', 'IM 228.png', 'Im229.png', 'IM 230.png', 'IM 231.png', 'Im232precisejumper.png', 'Screenshot 2018-01-10 at 11.11.17 AM.png', 'Screenshot 2018-01-10 at 11.04.06 AM.png', 'IM 235.png', 'IM 236.png', 'IM 237.png', 'IM 238.png', 'IM 239.png', 'IM 240.png', 'IM 241.png', 'IM 242.png', '243.png', 'Im244.png', 'Im245.png', 'IM 246.png', 'IM 247.png', 'IM 248.png', 'IM 249.png', 'IM 250.png', 'IM 251.png', 'Im252snakesandladders.png', 'IM 253.png', 'Oooooo spooky (254).png', 'IM 255.png', 'IM 256.png', 'IM 257.png', 'IM 258.png', 'IM 259.png', 'IM 260.png', 'IM 261.png', 'IM 262.png', 'IM 263.png', 'IM 264.png', 'IM 265.png', 'IM 266.png', 'IM 267.png', 'IM 268.png', 'IM 269.png', 'IM 270.png', '', 'IM 272.png', 'IM 273.png', 'IM 274.png', 'IM 275.png', 'IM 276.png', 'Plan C, part 10.png', 'Im278.png', 'IM 279.png', 'Screenshot 2018-01-11 at 11.21.18 AM.png', 'IM 281.png', 'IM 282.png', 'IM 283.png', 'IM 284.png', 'IM 285.png', 'IM 286.png', 'IM 287.png', 'IM 288.png', 'IM 289.png', 'IM 290.png', 'IM 291.png', 'Screenshot 2018-01-10 at 7.58.02 AM.png', 'IM 293.png', 'IM 294.png', 'IM 295.png', 'IM 296.png', 'IM 297.png', 'IM 298 new.png', 'Im299.png', 'IM 300.png', 'IM 301.png', 'IM 302.png', 'IM 303.png', 'IM 304.png', 'Im305.png', 'Screenshot 2018-01-10 at 11.15.27 AM.png', 'Screenshot 2018-01-16 at 7.59.18 AM.png', 'Screenshot 2018-01-09 at 1.35.47 PM.png', 'IM 309.png', 'IM 310.png', 'IM 311.png', 'IM 312.png', 'IM 313.png', 'IM 314.png', 'IM 315.png', 'Screenshot 2018-01-10 at 11.18.53 AM.png', 'IM 317.png', 'IM 318.png', 'IM 319.png', 'IM 320.png', 'IM 321.png', 'IM 322.png', 'What the egg! A new level!.png', '324.png', '325.png', 'Screenshot 2018-01-10 at 7.59.07 AM.png', 'IM 327.png', '328.png'];
+
+        function search(){
+            let val1 = document.getElementById('searchtext').value;
+            let val2 = [];
+            let endUrl = '';
+            switch(true){
+                case /^s\x20/.test(val1) : {
+                    /^s\x20([\x20-\x7e]+)$/.exec(val1)[1].split('').forEach((el) => val2.push('%' + el.charCodeAt(0).toString(16).toUpperCase()));
+                    endUrl = 'https://google.com/search?q=' + val2.join('');
+                    break;
+                }
+                case /^w\x20/.test(val1) : {
+                    endUrl = 'https://en.wikipedia.org/w/index.php?search=' + /^w\x20([\x20-\x7e]+)$/.exec(val1)[1].split(' ').join('_') + '&title=Special:Search&profile=advanced&fulltext=1&ns0=1';
+                    break;
+                }
+                case /^[Yy][Oo][Uu][Tt][Uu][Bb][Ee]$/g.test(val1) || /^[Yy][Tt]$/g.test(val1) : {
+                    endUrl = 'https://www.youtube.com/';
+                    break;
+                }
+                case /^[Aa][Pp]\x20{0,1}[Cc][Ll][Aa][Ss]{2}[Rr][Oo]{2}[Mm]$/.test(val1) || /^[Aa][Pp]\x20{0,1}[Cc][Rr]$/.test(val1) : {
+                    endUrl = 'https://myap.collegeboard.org/';
+                    break;
+                }
+                case /^[Gg]\x20{0,1}[Cc][Ll][Aa][Ss]{2}[Rr][Oo]{2}[Mm]$/.test(val1) || /^[Gg]\x20{0,1}[Cc][Rr]$/.test(val1) : {
+                    endUrl = 'https://classroom.google.com/u/1/h';
+                    break;
+                }
+                case /^[Ww][Ii][Kk][Ii][Pp][Ee][Dd][Ii][Aa]$/.test(val1) || /^[Ww][Ii][Kk][Ii]$/.test(val1) : {
+                    endUrl = 'https://en.wikipedia.org/wiki/Special:Search?search=&go=Go';
+                    break;
+                }
+                case /^[Mm][Dd][Nn]$/g.test(val1) : {
+                    endUrl = 'https://developer.mozilla.org/en-US/';
+                    break;
+                }
+                case /^[Ii][MmLl]\x20{0,1}[Gg][Aa][Ll]{2}[Ee][Rr][Yy]/g.test(val1) || /^[Ii][Nn][Ff][Ii][Nn][Ii][Tt][Ee]\x20[Mm][Oo][Dd][Ee]\x20[Gg][Aa][Ll]{2}[Ee][Rr][Yy]/g.test(val1): {
+                    if (/[0-9]+/g.test(val1)) {
+                        val2.push(parseInt((/[0-9]+/g.exec(val1))[0]));
+                        switch(true){
+                            case 0 <= val2[0] && val2[0] <= 50 : {
+                                val2.push('#IDs_0-50_', GalleryImageReference[val2[0]]);
+                                break;
+                            }
+                            case 51 <= val2[0] && val2[0] <= 100 : {
+                                val2.push('#IDs_51-100_', GalleryImageReference[val2[0]]);
+                                break;
+                            }
+                            case 101 <= val2[0] && val2[0] <= 150 : {
+                                val2.push('#IDs_101-150_', GalleryImageReference[val2[0]]);
+                                break;
+                            }
+                            case 151 <= val2[0] && val2[0] <= 200 : {
+                                val2.push('#IDs_151-200_', GalleryImageReference[val2[0]]);
+                                break;
+                            }
+                            case 201 <= val2[0] && val2[0] <= 250 : {
+                                val2.push('#IDs_201-250_', GalleryImageReference[val2[0]]);
+                                break;
+                            }
+                            case 251 <= val2[0] && val2[0] <= 300 : {
+                                val2.push('#IDs_251-300_', GalleryImageReference[val2[0]]);
+                                break;
+                            }
+                            case 301 <= val2[0] && val2[0] <= 328 : {
+                                val2.push('#IDs_301+_', GalleryImageReference[val2[0]]);
+                                break;
+                            }
+                            default : {
+                                val2.push('', '');
+                                break;
+                            }
+                        }
+                    } 
+                    else {
+                        val2.push(-1, '', '');
+                    }
+                    if (val2[2] != ''){
+                        endUrl = 'https://run.fandom.com/wiki/Infinite_Mode_Gallery?file=' + val2[2].split(' ').join('_') + val2[1] + '';
+                    }
+                    else if (val2[1] != '') {
+                        endUrl = 'https://run.fandom.com/wiki/Infinite_Mode_Gallery' + val2[1] + '';
+                    }
+                    else {
+                        endUrl = 'https://run.fandom.com/wiki/Infinite_Mode_Gallery';
+                    }
+                    break;
+                }
+                case /^[EeXx][MmLl]$/g.test(val1) || /[Ee][Xx][Pp][Ll][Oo][Rr][Ee]/g.test(val1) : {
+                    endUrl = 'https://player03.com/run/3/beta/text/ExploreLevels.txt';
+                    break;
+                }
+                case /^[Ii][MmLl]$/g.test(val1) || /[Ii][Nn][Ff][Ii][Nn][Ii][Tt][Ee]/g.test(val1) : {
+                    endUrl = 'https://player03.com/run/3/beta/text/InfiniteLevels.txt';
+                    break;
+                }
+                case /^[Kk][Oo][Nn][Gg]$/.test(val1) : {
+                    endUrl = 'https://www.kongregate.com/accounts/oreoid';
+                    break;
+                }
+                case /^[Ll][Ii][Nn][Kk][Tt][Rr][Ee]{2}$/.test(val1) : {
+                    endUrl = 'https://linktr.ee/oreoid';
+                    break;
+                }
+                case /^[Tt][Ww][Ii][Tt]{2}[Ee][Rr]$/.test(val1) : {
+                    endUrl = 'https://twitter.com/@oreoid3';
+                    break;
+                }
+                case /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi.test(val1) : {
+                    endUrl = 'https://' + val1;
+                    break;
+                }
+                default : {
+                    val1.split('').forEach((el) => val2.push('%' + el.charCodeAt(0).toString(16).toUpperCase()));
+                    endUrl = 'https://www.google.com/search?q=' + val2.join('');
+                    break;
+                }
+            }
+            document.getElementById('searchtext').value = '';
+            window.location.assign(endUrl);
+        }
+
+        window.addEventListener(
+            'keydown',
+            (event) => {
+                if (event.code == 'Enter' || event.key == 'Enter') {
+                    search();
+                }
+            }, true
+        );
+
+    </script>
+    <style>
+        html {
+            height: 100%;
+        }
+        body {
+            background: linear-gradient(#11111199, #11111199), url(./images/Skybox5.png);
+            color: white;
+            height: 95%;
+        }
+        #searchbarcontainer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 80%;
+        }
+        .search{
+            padding: 12px;
+            font-size: 24px;
+            border: none;
+            color: white;
+            background-color: #222;
+        }
+        .search:hover{
+            background-color:#444;
+        }
+        #searchtext{
+            width: 50%;
+        }
+    </style>
+</html>
