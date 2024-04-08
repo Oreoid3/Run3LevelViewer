@@ -44,6 +44,8 @@
 	var TriggerArray = [];
 	var SpawnArray = [];
 	var endSpawnArray = [];
+
+	const recognizedTerrainTypes = ['crumbling', 'ice', 'ramp', 'iceRamp', 'box', 'rotatedZBox', 'steepRamp', 'bounce', 'bouncy', 'glow', 'movable', 'movableBox', 'fast', 'slow', 'left', 'right', 'battery', 'warning', 'texture\\x2DWarningStripes', 'ruined', 'openBox', 'bridge', 'nonrotating', 'sticky', 'inverse', 'slippery', 'death', 'fastRamp', 'slowRamp', 'colorBox', 'leftBig', 'rightBig', 'slowBig', 'fastBig', 'upCrumbling', 'spawn', 'endSpawn', 'dragonBones'];
 	
 	function onChangeFile(){
 		let var1 = [];
@@ -385,7 +387,7 @@
 		switch (fileSelector.value){
 			case 'explore' : {
 				if (tunnelSelector == null || exploreSelector == null){
-					console.log('(I) preexistent data is null, can\'t run yet');
+					console.log('(E) preexistent data is null, can\'t run yet');
 					return;
 				}
 				level = (exploreData[tunnelSelector.value])[exploreSelector.value];
@@ -555,111 +557,13 @@
 					if (Math.ceil(local5.length / Chunk) > ZLength) {
 						ZLength = Math.ceil(local5.length / Chunk); // keeps a reminder of how long the level is; will be useful later
 					}
-					switch (true){ // now look for tiletype
-	                    case /\x7Ecrumbling\b/g.test(local1[i]): {
-	                        local4 = 'crumbling';
-	                        break;
-	                    }
-	                    case /\x7Eice\b/g.test(local1[i]): {
-	                        local4 = 'ice';
-	                        break;
-	                    }
-	                    case /\x7Eramp\b/g.test(local1[i]):
-	                    case /\x7EiceRamp\b/g.test(local1[i]): {
-	                        local4 = 'iceRamp';
-	                        break;
-	                    }
-	                    case /\x7EsteepRamp\b/g.test(local1[i]): { // i still wonder why these shits still need to be called 'steepRamps' like player03 oh my god your code is so weird sometimes 
-	                        local4 = 'steepRamp';
-	                        break;
-	                    }
-	                    case /\x7Eglow\b/g.test(local1[i]): {
-	                        local4 = 'glow';
-	                        break;
-	                    }
-	                    case /\x7Efast\b/g.test(local1[i]): {
-	                        local4 = 'fast';
-	                        break;
-	                    }
-	                    case /\x7Eslow\b/g.test(local1[i]): {
-	                        local4 = 'slow';
-	                        break;
-	                    }
-	                    case /\x7Eleft\b/g.test(local1[i]): {
-	                        local4 = 'left';
-	                        break;
-	                    }
-	                    case /\x7Eright\b/g.test(local1[i]): {
-	                        local4 = 'right';
-	                        break;
-	                    }
-	                    case /\x7Ebounce\b/g.test(local1[i]):
-	                    case /\x7Ebouncy\b/g.test(local1[i]): { // i blame a16 for the 'bounce' checker
-	                        local4 = 'bouncy';
-	                        break;
-	                    }
-	                    case /\x7Ebattery\b/g.test(local1[i]): {
-	                        local4 = 'battery';
-	                        break;
-	                    }
-	                    case /\x7Emovable\b/g.test(local1[i]): {
-	                        local4 = 'movable';
-	                        break;
-	                    }
-	                    case /\x7Ewarning\b/g.test(local1[i]):
-	                    case /\x7Etexture\x2DWarningStripes\b/g.test(local1[i]): { // honestly it should have become 'warning' way earlier
-	                        local4 = 'warning';
-	                        break;
-	                    }
-	                    case /\x7Ebox\b/g.test(local1[i]): {
-	                        local4 = 'box';
-	                        break;
-	                    }
-	                    case /\x7ErotatedZBox\b/g.test(local1[i]): {
-	                        local4 = 'rotatedZBox';
-	                        break;
-	                    }
-	                    case /\x7EmovableBox\b/g.test(local1[i]): {
-	                        local4 = 'movableBox';
-	                        break;
-	                    }
-	                    case /\x7EopenBox\b/g.test(local1[i]): {
-	                        local4 = 'openBox';
-	                        break;
-	                    }
-	                    case /\x7Eruined\b/g.test(local1[i]): { // tiletypes from here on are barely relevant; i only really define them for legacy reasons
-	                        local4 = 'ruined';
-	                        break;
-	                    }
-	                    case /\x7Ebridge\b/g.test(local1[i]): {
-	                        local4 = 'bridge';
-	                        break;
-	                    }
-	                    case /\x7Einverse\b/g.test(local1[i]): {
-	                        local4 = 'inverse';
-	                        break;
-	                    }
-	                    case /\x7Enonrotating\b/g.test(local1[i]): {
-	                        local4 = 'nonrotating';
-	                        break;
-	                    }
-	                    case /\x7Esticky\b/g.test(local1[i]): {
-	                        local4 = 'sticky';
-	                        break;
-	                    }
-	                    case /\x7Espawn\b/g.test(local1[i]): {
-	                        local4 = 'spawn';
-	                        break;
-	                    }
-	                    case /\x7Etexture\x2DArrow\b/g.test(local1[i]):
-	                    case /\x7EendSpawn\b/g.test(local1[i]): {
-	                        local4 = 'endSpawn';
-	                        break;
-	                    }
-	                    default: { // except this one, this is slightly important
-	                        local4 = 'normal';
-	                    }
-	                }
+					local4 = 'normal';
+					label1: for (j = 0; j < recognizedTerrainTypes.length; j++) {
+						if ((new RegExp('\\x7e' + recognizedTerrainTypes[j] + '\\b')).test(local1[i])){
+							local4 = recognizedTerrainTypes[j];
+							break label1;
+						}
+					}
 	                local2.push(local4); // tiletype as second element of array
 					local4 = '0'; // check to see if there's a color specification
 					if (/\bcolor\x2D[0-9]+\b/g.test(local1[i])){
@@ -798,6 +702,7 @@
 				tiles.push('<td class="steepRamp" style="background: no-repeat url(./images/RampOverlay.png); background-size: contain; background-color:#' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 				break;
 			}
+			case 'ramp' :
 			case 'iceRamp' : {
 				for (let j = 1; j <= 4; j++){
 					tiles.push('<td class="iceRamp" style="background: no-repeat url(./images/RampOverlay.png), linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/IceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
@@ -824,6 +729,7 @@
 				tiles.push('<td class="right" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/Acceleration-90R.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
 				break;
 			}
+			case 'bounce' :
 			case 'bouncy' : {
 				tiles.push('<td class="bouncy" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/bounce.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
 				break;
@@ -836,6 +742,7 @@
 				tiles.push('<td class="movable" style="background: no-repeat url(./images/Ring.png); background-size: contain; background-color:#' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 				break;
 			}
+			case 'texture\\x2DWarningStripes' :
 			case 'warning' : {
 				tiles.push('<td class="warning" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/WarningStripes.png); background-size: contain; style="rotate: 90deg; width: 100%; height: 100%;"></td>');
 				break;
@@ -886,6 +793,56 @@
 				tiles.push('<td class="upArrow" style="background-color: #0000;"><img src="./images/Arrow.png" style="width: 100%; height: 100%;"></td>');
 				break;
 			}
+			// tiles from here on out are user-created
+			case 'fastRamp' : {
+				tiles.push('<td class="death" style="background: no-repeat url(./images/RampOverlay.png), linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/Acceleration-180.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'slowRamp' : {
+				tiles.push('<td class="death" style="background: no-repeat url(./images/RampOverlay.png), linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/Acceleration.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'death' : {
+				tiles.push('<td class="right" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/DeleteIcon.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'slippery' : {
+				for (let j = 1; j <= 4; j++){
+					tiles.push('<td class="slippery" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/slipperyIceTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+				}
+				break;
+			}
+			case 'colorBox' : {
+				tiles.push('<td class="colorBox" style="background-color: #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + '; box-shadow: inset 0em 0em 0em ' + Math.ceil(GlobalTileWidth * (2 / 75)) + 'px #' + cInterpolate('000000', cInterpolate(ColorArray[Number(param1[2])], 'dddddd', 0.85), Power) + ';"></td>');
+				break;
+			}
+			case 'fastBig' : {
+				tiles.push('<td class="fastBig" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/BigAcceleration-180.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'slowBig' : {
+				tiles.push('<td class="slowBig" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/BigAcceleration.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'leftBig' : {
+				tiles.push('<td class="leftBig" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/BigAcceleration-90L.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'rightBig' : {
+				tiles.push('<td class="rightBig" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/BigAcceleration-90R.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+				break;
+			}
+			case 'upCrumbling' : {
+				for (let j = 1; j <= 8; j++){
+					tiles.push('<td class="upCrumbling" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/upCrumblingTile' + j + '.png); background-size: contain;" style="rotate: 90deg; width: 100%; height: 100%;"></td>');
+				}
+				break;	
+			}
+			case 'dragonBones' : {
+				tiles.push('<td class="crumbling" style="background: linear-gradient(#000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + ', #000000' + Math.round((1 - Power) * 255).toString(16).padStart(2, '0') + '), no-repeat url(./images/DragonBones.png); background-size: contain;" style=" width: 100%; height: 100%;"></td>');
+				break;
+			}
+			// except normal tiles, can't forget normal tiles
 			default : {
 				tiles.push('<td class="normal" style="background-color: #' + cInterpolate('000000', ColorArray[Number(param1[2])], Power) + ';"></td>');
 				break;
@@ -893,9 +850,17 @@
 		}
 		return tiles;
 	}
-	
-	fileSelector.onchange = onChangeFile;
+
+	window.addEventListener(
+        'keydown',
+        (event) => {
+            if (event.code == 'Enter' || event.key == 'Enter') {
+                extractLevel();
+            }
+        }, true
+    );
 	document.getElementById('loaderButton').addEventListener("click", extractLevel);
+	fileSelector.onchange = onChangeFile;
 	onChangeFile();
 	
 </script>
